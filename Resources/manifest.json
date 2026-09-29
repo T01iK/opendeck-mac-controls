@@ -1,7 +1,7 @@
 {
 	"Name": "macOS Controls",
-	"Description": "Volume, media, brightness, system launchers, Shortcuts and a hardware monitor for macOS.",
-	"Author": "t01ik",
+	"Description": "Native macOS controls: volume, media, brightness, Control Center switches, launchers, Shortcuts, apps and a hardware monitor.",
+	"Author": "Anatoliy Shulika",
 	"Version": "1.0.0",
 	"SDKVersion": 2,
 	"Icon": "icons/plugin",

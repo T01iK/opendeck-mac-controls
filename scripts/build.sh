@@ -20,10 +20,10 @@ clang -O2 -fobjc-arc -arch arm64 -arch x86_64 -mmacosx-version-min=13.0 -dynamic
 	Helpers/NowPlaying/nowplaying.m -o "$OUT/libnowplaying.dylib"
 cp Helpers/NowPlaying/nowplaying.pl "$OUT/"
 
-echo "→ Copying manifest and property inspectors"
-cp Plugin/manifest.json "$OUT/"
-cp -R Plugin/pi "$OUT/pi"
-cp -R Plugin/layouts "$OUT/layouts"
+echo "→ Copying resources (manifest, property inspectors, dial layouts)"
+cp Resources/manifest.json "$OUT/"
+cp -R Resources/pi "$OUT/pi"
+cp -R Resources/layouts "$OUT/layouts"
 
 echo "→ Rendering icons"
 "$OUT/MacControls" --generate-icons "$OUT"

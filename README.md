@@ -1,98 +1,94 @@
 # macOS Controls — OpenDeck plugin
 
-Native macOS actions for [OpenDeck](https://github.com/nekename/OpenDeck), written in Swift with no third-party dependencies.
+Native macOS actions for [OpenDeck](https://github.com/nekename/OpenDeck): volume, media, brightness, Control Center
+switches, launchers, Shortcuts, apps and a hardware monitor. Written in Swift, no third-party dependencies, no root.
+
+Keys show live state (levels, now playing, on/off, stats); actions with dial support work on encoders too
+(e.g. Ajazz AKP05 / Mirabox N4, Stream Deck +).
+
+## Actions
 
 | Action | Keys | Dials |
 |---|---|---|
-| **Volume** | up / down (hold to repeat), mute, set to preset; shows level | turn = adjust, press = mute |
-| **Display Brightness** | up / down, set to preset; shows level | turn = adjust, press = preset |
-| **Media** | play/pause with artwork, title and progress; next; previous; optional scrolling of long titles | turn = skip track or scrub, press = play/pause |
-| **Mission Control**, **Apps (Launchpad)**, **Spotlight**, **Siri** | toggle / activate; symbol or system app icon | – |
-| **Emoji & Symbols**, **Dictation** | open for the focused text field | – |
-| **Run Shortcut** | runs a Shortcuts.app shortcut (optional text input) with its own icon, ✓ / ⚠ feedback | – |
-| **Control Center** | switches with live state: Wi-Fi, Bluetooth, Stage Manager, Dark Mode, Night Shift, True Tone, mic mute, keep awake, Dock auto-hide; commands: lock, displays off, screensaver, sleep, show desktop | press = toggle |
-| **Keyboard Brightness** | up / down, set to preset; shows level | turn = adjust, press = preset |
+| **Volume** | up / down (hold to repeat), mute, set to preset; shows the level | turn = adjust, press = mute |
+| **Display Brightness** | same, for the built-in display and Apple displays | turn = adjust, press = preset |
+| **Keyboard Brightness** | same, for the built-in keyboard backlight | turn = adjust, press = preset |
+| **Media** | play/pause with artwork, title and progress; next; previous | turn = skip tracks or scrub, press = play/pause |
 | **Audio Output** | switch to a device (lit while active) or cycle through devices | – |
-| **Input Source** | next layout or a specific one; shows EN / RU… | – |
-| **Open App** | opens / focuses an app (hides it if already in front); shows its icon and a running dot | – |
-| **System Monitor** | CPU, RAM, GPU, battery (Mac: level, charging, time left; or a Bluetooth device: keyboard / mouse / earbuds L-R-Case), CPU/SSD/battery temperature, network ↓↑, disk R/W, with a 30 s graph | – |
+| **Input Source** | next keyboard layout or a specific one (EN / RU …) | – |
+| **Control Center** | switches with live state: Wi-Fi, Bluetooth, Stage Manager, Dark Mode, Night Shift, True Tone, mic mute, keep awake, Dock auto-hide · commands: lock, displays off, screensaver, sleep, show desktop | press = toggle |
+| **Mission Control**, **Apps** (Launchpad), **Spotlight**, **Siri** | toggle / activate; SF Symbol or the system app icon | – |
+| **Emoji & Symbols**, **Dictation** | open for the focused text field | – |
+| **Run Shortcut** | runs a Shortcuts shortcut (optional text input) with its own icon; ✓ / ⚠ feedback | – |
+| **Open App** | opens / focuses an app, hides it if already in front; app icon and running dot | – |
+| **System Monitor** | CPU, RAM, GPU, battery (Mac or a Bluetooth device: keyboard, mouse, AirPods L/R/Case), CPU / SSD / battery temperature, network ↓↑, disk R/W; optional 30 s graph | – |
 
-## Build & install
+Every action has a property inspector in OpenDeck with its options (step sizes, presets, captions on/off, icon style,
+scrolling of long titles, …).
 
-Requires Xcode (or the Command Line Tools) with Swift 5.9+.
+## Requirements
+
+- macOS 13 or later (developed and tested on macOS 27, Apple Silicon)
+- [OpenDeck](https://github.com/nekename/OpenDeck) 2.x
+- Xcode or the Command Line Tools (Swift 5.9+) to build
+
+## Install
+
+**From a release:** download `macos-controls.plugin.zip` from the latest GitHub release, then in OpenDeck open
+*Plugins → Install from file* and pick it. Once listed in the OpenAction Marketplace, install it from OpenDeck's plugin
+browser instead; OpenDeck then also offers updates.
+
+**From source:**
 
 ```bash
-scripts/install.sh              # build, copy into OpenDeck's plugins folder, restart OpenDeck
-scripts/build.sh                # only build → build/com.t01ik.macoscontrols.sdPlugin
+scripts/install.sh      # build, copy into OpenDeck's plugins folder, restart OpenDeck
+scripts/build.sh        # only build → build/com.t01ik.macoscontrols.sdPlugin
+scripts/package.sh      # build + validate + release artifacts → dist/  (see docs/RELEASING.md)
 ```
 
-Logs: `~/Library/Logs/MacControls.log`.
+The actions appear in the **macOS** category.
 
 ## Permissions
 
-- **Bluetooth** switch: macOS asks once to allow **macOS Controls** to use Bluetooth (see below why it is not OpenDeck).
-- **Emoji & Symbols** and **Dictation** need Accessibility, explained below.
+Only these features ask for permission, each once:
 
-Nothing else needs a permission. On first use macOS shows
-*"OpenDeck.app wants to control this Mac and access your data"* — that is the **Accessibility** permission
-(System Settings → Privacy & Security → Accessibility → OpenDeck).
+| Feature | Prompt | Why |
+|---|---|---|
+| **Emoji & Symbols**, **Dictation** | *OpenDeck wants to control this Mac* (Accessibility) | macOS has no API to open these for another app and the 🌐 key cannot be simulated, so the plugin clicks the *Edit* menu items of the focused app. Granted to OpenDeck as a whole. |
+| **Bluetooth** switch and Bluetooth battery levels | *macOS Controls wants to use Bluetooth* | Bluetooth is privacy-protected; a small helper asks for it under the plugin's own name. May be asked again after rebuilding. |
 
-This is unavoidable: macOS has no API to open the emoji picker or start dictation from another process, and the Globe (🌐)
-key cannot be simulated, so the plugin has to press the *Edit* menu items of the focused app (or send ⌃⌘Space), which
-requires Accessibility. The permission is granted to OpenDeck as a whole (plugins run as its child processes), so every
-OpenDeck plugin can use it. If you do not use these two actions you can simply deny it — everything else works without it.
+Everything else works without any permission. You can deny a prompt; only that feature stops working.
 
-## How it works / limitations
+## Limitations
 
-- **Volume** — CoreAudio on the default output device. Outputs without software volume (HDMI/DisplayPort audio) show N/A,
-  same as in macOS itself.
-- **Brightness** — private `DisplayServices` framework, i.e. only displays macOS can dim itself: the built-in panel and
-  Apple displays. Third-party monitors (DDC/CI) are intentionally not supported. Shows N/A when the lid is closed.
-- **Now playing** — since macOS 15.4 the private MediaRemote framework only answers Apple-signed processes, so a small
-  helper (`Helpers/NowPlaying`) is loaded into `/usr/bin/perl`, which is allowed. Transport commands go through the same
-  helper; if a future macOS breaks this, the plugin falls back to synthetic media keys and plain icons. Right after
-  play/pause MediaRemote briefly reports the item without artwork; the previous artwork is kept for the same item.
-  Scrubbing uses `MRMediaRemoteSetElapsedTime` (only apps that support seeking). The Media dial uses a custom layout
-  (`Plugin/layouts/media.json`, one full-size pixmap drawn by the plugin) so long text can scroll smoothly.
-- **Mission Control / Apps** — Dock notifications (`com.apple.expose.awake`, `com.apple.launchpad.toggle`).
-  **Spotlight** — the `com.apple.spotlight.toggle` distributed notification (works even with ⌘Space disabled).
-  **Siri** — opens `/System/Applications/Siri.app`.
-- **Emoji / Dictation** — there is no public API and the Globe key cannot be synthesised; the plugin presses the
-  *Edit → Emoji & Symbols* / *Start Dictation* menu items AppKit adds to every app (so it needs an app with a text focus).
-  Emoji falls back to ⌃⌘Space.
-- **Shortcuts** — `/usr/bin/shortcuts run`, started with plain `posix_spawn`: launched through Foundation's `Process`
-  from under OpenDeck it fails with "shortcut not found". Shortcuts are referenced by identifier (names are not unique).
-  The shortcut's icon (colour + glyph) is read from `~/Library/Shortcuts/Shortcuts.sqlite` and drawn with the private
-  WorkflowKit `WFWorkflowIconDrawer`, so it looks exactly like in the Shortcuts app; falls back to a symbol if that fails.
-- **Open App** — `NSWorkspace`; the app list covers /Applications, /System/Applications and ~/Applications (plus one
-  subfolder level).
-- **Control Center** — Wi-Fi: CoreWLAN. Bluetooth: private `IOBluetoothPreferenceSetControllerPowerState`; Bluetooth is
-  privacy-protected and OpenDeck's Info.plist has no Bluetooth usage description, so TCC would kill the plugin. Instead the
-  plugin re-launches its own binary (`--bluetooth get|on|off`) with `responsibility_spawnattrs_setdisclaim`, making it
-  its own responsible process; the binary embeds an Info.plist (`Support/Info.plist`) with the usage description.
-  Ad-hoc signed rebuilds may make macOS ask again. Stage Manager: `com.apple.WindowManager GloballyEnabled` + restarting
-  WindowManager (it only reads the setting at launch; brief flicker). Dark Mode: SkyLight `SLSSetAppearanceThemeLegacy`.
-  Night Shift / True Tone: CoreBrightness `CBBlueLightClient` / `CBTrueToneClient`. Mic: CoreAudio input mute (or level
-  0). Keep awake: an IOPMAssertion held by the plugin. Dock: `CoreDockSetAutoHideEnabled`. Lock: `SACLockScreenImmediate`.
-  Displays off / sleep: `pmset displaysleepnow` / `sleepnow`. Show desktop: Dock notification.
-- **Not possible without Apple's private entitlements**: Low Power Mode, Focus (use a Shortcut with *Set Focus*), AirDrop,
-  AirPlay, Personal Hotspot. HomeKit is only available to signed Mac Catalyst apps — use Shortcuts' Home actions.
-- **Bluetooth batteries** — Apple HID devices (Magic Keyboard / Mouse / Trackpad) from the IORegistry
-  (`AppleDeviceManagementHIDEventService` → `BatteryPercent`, live, no permission); other devices (AirPods, Beats…) from
-  IOBluetooth's private `batteryPercentSingle/Left/Right/Case` via the Bluetooth helper, refreshed every 30 s.
-- **Keyboard Brightness** — CoreBrightness `KeyboardBrightnessClient`. **Audio Output** — CoreAudio default output
-  (and system sound output). **Input Source** — Text Input Sources (TIS) API.
-- **Temperatures** — private IOHIDEventSystem sensors (no root needed). CPU = average of the SoC `tdie` sensors.
+- **Brightness** only for displays macOS can dim itself (built-in, Apple displays); third-party monitors are not
+  supported. Shows *N/A* with the lid closed. Same for **True Tone** and **Keyboard Brightness**.
+- **Volume** is *N/A* for outputs without software volume (HDMI / DisplayPort audio), as in macOS.
+- **Now playing / scrubbing** rely on a private framework that macOS restricts; see
+  [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Scrubbing works only with apps that support seeking.
+- **Stage Manager** switching restarts the window manager — a brief flicker.
+- **Not possible** without Apple's private entitlements: Low Power Mode, Focus (use a shortcut with *Set Focus*),
+  AirDrop, AirPlay, Personal Hotspot. **HomeKit**: use Shortcuts' Home actions with *Run Shortcut*.
 
-## Layout
+## Troubleshooting
+
+- **Log:** `~/Library/Logs/MacControls.log` (recreated on every start). OpenDeck's own log is in
+  `~/Library/Logs/opendeck/`.
+- **Keys stopped updating:** OpenDeck does not restart a plugin that quit — restart OpenDeck.
+- **Emoji / Dictation do nothing:** check System Settings → Privacy & Security → Accessibility → OpenDeck, and that the
+  front app has a text field focused.
+- **Bluetooth switch shows N/A:** allow *macOS Controls* in System Settings → Privacy & Security → Bluetooth.
+
+## Development
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the plugin is built, the helper processes, the private APIs
+it uses and how to add an action, and [docs/RELEASING.md](docs/RELEASING.md) for publishing a release and the
+marketplace listing.
 
 ```
-Sources/MacControls/
-  Core/      websocket protocol, rendering, hold-to-repeat, posix_spawn helper
-  System/    CoreAudio, DisplayServices, MediaRemote client, stats, input/Accessibility
-  Actions/   one handler per action group
-Helpers/NowPlaying/   Objective-C helper loaded into /usr/bin/perl
-Support/Info.plist    embedded into the binary (bundle id + Bluetooth usage description)
-Plugin/               manifest.json and property inspectors (pi/)
-scripts/              build.sh, install.sh
+Sources/MacControls/   Swift plugin (App, Core, Rendering, System, Actions)
+Helpers/NowPlaying/    Objective-C now-playing helper, loaded into /usr/bin/perl
+Resources/             manifest.json, property inspectors (pi/), dial layouts — copied into the bundle
+scripts/               build.sh, install.sh, package.sh
+docs/                  ARCHITECTURE.md, RELEASING.md
 ```

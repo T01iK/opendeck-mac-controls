@@ -25,7 +25,7 @@ final class LauncherAction: ActionHandler {
 	func willAppear(_ instance: Instance) {
 		if instance.bool("systemIcon", false), let path = systemIconPaths[instance.action], FileManager.default.fileExists(atPath: path) {
 			Plugin.shared.setImage(instance, Render.imageKey(NSWorkspace.shared.icon(forFile: path)))
-		} else if !instance.bool("showLabel", true), let spec = Render.defaultKeys[instance.action] {
+		} else if !instance.bool("showLabel", true), let spec = KeyCatalog.defaultKeys[instance.action] {
 			Plugin.shared.setImage(instance, Render.iconKey(symbol: spec.symbol, color: spec.color))
 		}
 	}
