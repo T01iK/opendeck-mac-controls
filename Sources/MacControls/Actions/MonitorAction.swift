@@ -3,7 +3,8 @@ import AppKit
 /// Live hardware stats on a key with a history graph.
 ///
 /// Settings: `metric` (see `Metric`), `graph` (bool, default true), `press` ("activity" | "none").
-/// "activity" opens Activity Monitor, or Battery settings for the battery metric.
+/// "activity" opens Activity Monitor, or Battery / Bluetooth settings for the battery metric.
+/// `batterySource` ("mac" or a Bluetooth device address, default "mac") picks which battery the battery metric shows.
 final class MonitorAction: ActionHandler {
 	let actionIDs = ["monitor"]
 
@@ -38,13 +39,23 @@ final class MonitorAction: ActionHandler {
 	func keyDown(_ instance: Instance) {
 		guard instance.string("press", "activity") == "activity" else { return }
 		if metric(instance) == .battery {
-			NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Battery-Settings.extension")!)
+			let pane = instance.string("batterySource", "mac") == "mac" ? "com.apple.Battery-Settings.extension" : "com.apple.BluetoothSettings"
+			NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:" + pane)!)
 			return
 		}
 		NSWorkspace.shared.openApplication(
 			at: URL(fileURLWithPath: "/System/Applications/Utilities/Activity Monitor.app"),
 			configuration: NSWorkspace.OpenConfiguration()
 		)
+	}
+
+	func messageFromInspector(_ instance: Instance, payload: [String: Any]) {
+		guard payload["request"] as? String == "listBatteries" else { return }
+		BluetoothBatteries.shared.refresh(maxAge: 0) {
+			// Accessories first; computers, phones and speakers report no battery this way.
+			let devices = BluetoothBatteries.shared.devices.sorted { ($0.kind == "other" ? 1 : 0, $0.name) < ($1.kind == "other" ? 1 : 0, $1.name) }
+			Plugin.shared.sendToInspector(instance, ["batteries": devices.map { ["address": $0.address, "name": $0.name] }])
+		}
 	}
 
 	// MARK: Sampling
@@ -68,6 +79,12 @@ final class MonitorAction: ActionHandler {
 			battery: has([.battery])
 		)
 		battery = snapshot.battery
+		if Plugin.shared.instances(of: self).contains(where: { metric($0) == .battery && $0.string("batterySource", "mac") != "mac" }) {
+			BluetoothBatteries.shared.refresh { [weak self] in
+				guard let self else { return }
+				Plugin.shared.instances(of: self).forEach(self.render)
+			}
+		}
 		record("cpu", snapshot.cpu)
 		record("memory", snapshot.memoryUsed.map { $0 / snapshot.memoryTotal * 100 })
 		record("gpu", snapshot.gpu)
@@ -111,7 +128,9 @@ final class MonitorAction: ActionHandler {
 		case .diskWrite: image = rateKey("DISK W", "diskWrite", color: Render.Palette.orange, graph: graph)
 		case .network: image = dualRateKey("NETWORK", ("↓", "networkIn"), ("↑", "networkOut"), graph: graph)
 		case .disk: image = dualRateKey("DISK", ("R", "diskRead"), ("W", "diskWrite"), graph: graph)
-		case .battery: image = batteryKey()
+		case .battery:
+			let source = instance.string("batterySource", "mac")
+			image = source == "mac" ? batteryKey() : bluetoothBatteryKey(address: source, fallbackName: instance.string("batteryName", "Device"))
 		}
 		Plugin.shared.setImage(instance, image)
 	}
@@ -220,23 +239,63 @@ final class MonitorAction: ActionHandler {
 			Render.drawText("BATTERY", in: CGRect(x: 10, y: 6, width: 124, height: 24), size: 18, weight: .bold, color: Render.Palette.secondary, alignment: .left)
 			Render.drawValue("\(Int(battery.percent.rounded()))", unit: "%", in: CGRect(x: 6, y: 30, width: 132, height: 48), size: 42)
 
-			// Battery body, terminal nub and fill.
-			let body = CGRect(x: 26, y: 84, width: 84, height: 30)
-			let outline = NSBezierPath(roundedRect: body, xRadius: 7, yRadius: 7)
-			outline.lineWidth = 3
-			Render.Palette.secondary.setStroke()
-			outline.stroke()
-			Render.Palette.secondary.setFill()
-			NSBezierPath(roundedRect: CGRect(x: body.maxX + 3, y: body.midY - 6, width: 5, height: 12), xRadius: 2, yRadius: 2).fill()
-			var fill = body.insetBy(dx: 5, dy: 5)
-			fill.size.width = max(3, fill.width * CGFloat(min(100, battery.percent)) / 100)
-			color.setFill()
-			NSBezierPath(roundedRect: fill, xRadius: 3, yRadius: 3).fill()
-			if battery.charging || battery.onAC {
-				Render.drawSymbol(battery.charging ? "bolt.fill" : "powerplug.fill", in: body.insetBy(dx: 30, dy: 4), color: .white, weight: .heavy)
-			}
+			Self.drawBatteryGauge(
+				CGRect(x: 26, y: 84, width: 84, height: 30), percent: battery.percent, color: color,
+				badge: battery.charging ? "bolt.fill" : battery.onAC ? "powerplug.fill" : nil
+			)
 
 			Render.drawText(status, in: CGRect(x: 6, y: 118, width: 132, height: 22), size: 17, color: Render.Palette.secondary)
+		}
+	}
+
+	/// A Bluetooth accessory: single battery as a gauge, or Left / Right / Case rows for earbuds.
+	private func bluetoothBatteryKey(address: String, fallbackName: String) -> String {
+		let device = BluetoothBatteries.shared.device(address: address)
+		let levelColor = { (percent: Int) -> NSColor in percent <= 20 ? Render.Palette.red : Render.Palette.text }
+		return Render.dataURI { rect in
+			Render.fillBackground(rect)
+			Render.drawSymbol(device?.symbol ?? "dot.radiowaves.left.and.right", in: CGRect(x: 8, y: 7, width: 22, height: 20), color: Render.Palette.secondary)
+			Render.drawText(device.map(BluetoothBatteries.shared.displayName) ?? fallbackName, in: CGRect(x: 34, y: 6, width: 104, height: 22),
+			                size: 16, weight: .bold, color: Render.Palette.secondary, alignment: .left, minSize: 12)
+
+			guard let device, device.connected, device.single != nil || device.isMultiBattery else {
+				Render.drawSymbol(device?.symbol ?? "questionmark", in: CGRect(x: 36, y: 38, width: 72, height: 56), color: Render.Palette.secondary.withAlphaComponent(0.5))
+				Render.drawText(device == nil ? "Not found" : "Not connected", in: CGRect(x: 6, y: 110, width: 132, height: 24), size: 17, color: Render.Palette.secondary)
+				return
+			}
+
+			if device.isMultiBattery {
+				let rows = [("L", device.left), ("R", device.right), ("Case", device.batteryCase)].compactMap { label, value in value.map { (label, $0) } }
+				for (index, row) in rows.enumerated() {
+					let y = 38 + CGFloat(index) * 34
+					Render.drawText(row.0, in: CGRect(x: 8, y: y, width: 46, height: 26), size: 15, weight: .bold, color: Render.Palette.secondary, alignment: .left)
+					Render.drawBar(CGRect(x: 56, y: y + 9, width: 36, height: 9), fraction: Double(row.1) / 100, color: levelColor(row.1))
+					Render.drawValue("\(row.1)", unit: "%", in: CGRect(x: 94, y: y, width: 46, height: 26), size: 20, alignment: .right)
+				}
+				return
+			}
+
+			let percent = device.single ?? 0
+			Render.drawValue("\(percent)", unit: "%", in: CGRect(x: 6, y: 30, width: 132, height: 48), size: 42)
+			Self.drawBatteryGauge(CGRect(x: 26, y: 84, width: 84, height: 30), percent: Double(percent), color: levelColor(percent), badge: nil)
+			Render.drawText("Connected", in: CGRect(x: 6, y: 118, width: 132, height: 22), size: 17, color: Render.Palette.secondary)
+		}
+	}
+
+	/// Battery outline with terminal nub, filled to `percent`, with an optional badge (bolt / plug) on top.
+	static func drawBatteryGauge(_ body: CGRect, percent: Double, color: NSColor, badge: String?) {
+		let outline = NSBezierPath(roundedRect: body, xRadius: 7, yRadius: 7)
+		outline.lineWidth = 3
+		Render.Palette.secondary.setStroke()
+		outline.stroke()
+		Render.Palette.secondary.setFill()
+		NSBezierPath(roundedRect: CGRect(x: body.maxX + 3, y: body.midY - 6, width: 5, height: 12), xRadius: 2, yRadius: 2).fill()
+		var fill = body.insetBy(dx: 5, dy: 5)
+		fill.size.width = max(3, fill.width * CGFloat(min(100, percent)) / 100)
+		color.setFill()
+		NSBezierPath(roundedRect: fill, xRadius: 3, yRadius: 3).fill()
+		if let badge {
+			Render.drawSymbol(badge, in: body.insetBy(dx: 30, dy: 4), color: .white, weight: .heavy)
 		}
 	}
 

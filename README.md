@@ -15,7 +15,7 @@ Native macOS actions for [OpenDeck](https://github.com/nekename/OpenDeck), writt
 | **Audio Output** | switch to a device (lit while active) or cycle through devices | – |
 | **Input Source** | next layout or a specific one; shows EN / RU… | – |
 | **Open App** | opens / focuses an app (hides it if already in front); shows its icon and a running dot | – |
-| **System Monitor** | CPU, RAM, GPU, battery (level, charging, time left), CPU/SSD/battery temperature, network ↓↑, disk R/W, with a 30 s graph | – |
+| **System Monitor** | CPU, RAM, GPU, battery (Mac: level, charging, time left; or a Bluetooth device: keyboard / mouse / earbuds L-R-Case), CPU/SSD/battery temperature, network ↓↑, disk R/W, with a 30 s graph | – |
 
 ## Build & install
 
@@ -75,6 +75,9 @@ OpenDeck plugin can use it. If you do not use these two actions you can simply d
   Displays off / sleep: `pmset displaysleepnow` / `sleepnow`. Show desktop: Dock notification.
 - **Not possible without Apple's private entitlements**: Low Power Mode, Focus (use a Shortcut with *Set Focus*), AirDrop,
   AirPlay, Personal Hotspot. HomeKit is only available to signed Mac Catalyst apps — use Shortcuts' Home actions.
+- **Bluetooth batteries** — Apple HID devices (Magic Keyboard / Mouse / Trackpad) from the IORegistry
+  (`AppleDeviceManagementHIDEventService` → `BatteryPercent`, live, no permission); other devices (AirPods, Beats…) from
+  IOBluetooth's private `batteryPercentSingle/Left/Right/Case` via the Bluetooth helper, refreshed every 30 s.
 - **Keyboard Brightness** — CoreBrightness `KeyboardBrightnessClient`. **Audio Output** — CoreAudio default output
   (and system sound output). **Input Source** — Text Input Sources (TIS) API.
 - **Temperatures** — private IOHIDEventSystem sensors (no root needed). CPU = average of the SoC `tdie` sensors.

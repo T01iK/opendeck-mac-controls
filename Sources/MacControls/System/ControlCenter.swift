@@ -189,8 +189,10 @@ final class ControlCenter {
 		}
 	}
 
-	/// Entry point for `MacControls --bluetooth get|on|off`: prints the resulting state (1/0).
+	/// Entry point for `MacControls --bluetooth get|on|off|devices`: prints the resulting state (1/0), or the paired
+	/// devices with their battery levels as JSON.
 	static func bluetoothHelperMain(_ command: String) -> Int32 {
+		if command == "devices" { return BluetoothBatteries.helperMain() }
 		typealias Get = @convention(c) () -> Int32
 		typealias Set = @convention(c) (Int32) -> Void
 		let handle = dlopen("/System/Library/Frameworks/IOBluetooth.framework/IOBluetooth", RTLD_NOW)
