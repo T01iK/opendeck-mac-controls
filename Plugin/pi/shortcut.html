@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="pi.css" />
+		<script src="pi.js"></script>
+	</head>
+	<body>
+		<div class="row">
+			<label for="name">Shortcut</label>
+			<div class="value">
+				<select id="name" data-setting="name" data-default="">
+					<option value="">Loading…</option>
+				</select>
+				<button id="reload" title="Reload list">↻</button>
+			</div>
+		</div>
+		<div class="row">
+			<label for="input">Input text</label>
+			<div class="value"><input id="input" type="text" placeholder="optional" data-setting="input" data-default="" /></div>
+		</div>
+		<div class="row">
+			<label for="showName">Label</label>
+			<div class="value">
+				<input id="showName" type="checkbox" data-setting="showName" data-default="true" />
+				<label for="showName">Show shortcut name on key</label>
+			</div>
+		</div>
+		<p class="hint">The key shows a checkmark when the shortcut finishes and a warning if it fails.</p>
+		<script>
+			function onConnected() {
+				sendToPlugin({ request: "listShortcuts" });
+			}
+
+			function onPluginMessage(payload) {
+				if (!payload.shortcuts) return;
+				const select = document.getElementById("name");
+				const selected = settings.name ?? "";
+				select.replaceChildren(new Option("Choose a shortcut…", ""));
+				for (const name of payload.shortcuts) select.add(new Option(name, name));
+				if (selected && !payload.shortcuts.includes(selected)) select.add(new Option(selected + " (missing)", selected));
+				select.value = selected;
+			}
+
+			document.getElementById("reload").onclick = () => sendToPlugin({ request: "listShortcuts" });
+		</script>
+	</body>
+</html>

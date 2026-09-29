@@ -1,0 +1,145 @@
+{
+	"Name": "macOS Controls",
+	"Description": "Volume, media, brightness, system launchers, Shortcuts and a hardware monitor for macOS.",
+	"Author": "t01ik",
+	"Version": "1.0.0",
+	"SDKVersion": 2,
+	"Icon": "icons/plugin",
+	"Category": "macOS",
+	"CategoryIcon": "icons/category",
+	"CodePath": "MacControls",
+	"CodePathMac": "MacControls",
+	"CodePaths": {
+		"aarch64-apple-darwin": "MacControls",
+		"x86_64-apple-darwin": "MacControls"
+	},
+	"OS": [{ "Platform": "mac", "MinimumVersion": "13" }],
+	"Software": { "MinimumVersion": "6.4" },
+	"Actions": [
+		{
+			"UUID": "com.t01ik.macoscontrols.volume",
+			"Name": "Volume",
+			"Tooltip": "Volume up / down / mute / set. On a dial: turn to adjust, press to mute.",
+			"Icon": "icons/volume",
+			"PropertyInspectorPath": "pi/level.html",
+			"Controllers": ["Keypad", "Encoder"],
+			"Encoder": {
+				"layout": "$B1",
+				"Icon": "icons/volume",
+				"TriggerDescription": { "Rotate": "Adjust volume", "Push": "Mute / unmute" }
+			},
+			"States": [{ "Image": "keys/volume", "ShowTitle": false }],
+			"SupportedInMultiActions": true
+		},
+		{
+			"UUID": "com.t01ik.macoscontrols.brightness",
+			"Name": "Display Brightness",
+			"Tooltip": "Brightness of the built-in display (and Apple displays). On a dial: turn to adjust, press for preset.",
+			"Icon": "icons/brightness",
+			"PropertyInspectorPath": "pi/level.html",
+			"Controllers": ["Keypad", "Encoder"],
+			"Encoder": {
+				"layout": "$B1",
+				"Icon": "icons/brightness",
+				"TriggerDescription": { "Rotate": "Adjust brightness", "Push": "Set preset" }
+			},
+			"States": [{ "Image": "keys/brightness", "ShowTitle": false }],
+			"SupportedInMultiActions": true
+		},
+		{
+			"UUID": "com.t01ik.macoscontrols.media",
+			"Name": "Media",
+			"Tooltip": "Play / pause (with now playing), next and previous track. On a dial: turn to skip, press to play/pause.",
+			"Icon": "icons/media",
+			"PropertyInspectorPath": "pi/media.html",
+			"Controllers": ["Keypad", "Encoder"],
+			"Encoder": {
+				"layout": "$B1",
+				"Icon": "icons/media",
+				"TriggerDescription": { "Rotate": "Previous / next track", "Push": "Play / pause" }
+			},
+			"States": [{ "Image": "keys/media", "ShowTitle": false }],
+			"SupportedInMultiActions": true
+		},
+		{
+			"UUID": "com.t01ik.macoscontrols.missioncontrol",
+			"Name": "Mission Control",
+			"Tooltip": "Show Mission Control",
+			"Icon": "icons/missioncontrol",
+			"PropertyInspectorPath": "pi/info.html",
+			"Controllers": ["Keypad"],
+			"States": [{ "Image": "keys/missioncontrol", "ShowTitle": false }],
+			"SupportedInMultiActions": true
+		},
+		{
+			"UUID": "com.t01ik.macoscontrols.apps",
+			"Name": "Apps (Launchpad)",
+			"Tooltip": "Show the Apps launcher",
+			"Icon": "icons/apps",
+			"PropertyInspectorPath": "pi/info.html",
+			"Controllers": ["Keypad"],
+			"States": [{ "Image": "keys/apps", "ShowTitle": false }],
+			"SupportedInMultiActions": true
+		},
+		{
+			"UUID": "com.t01ik.macoscontrols.spotlight",
+			"Name": "Spotlight",
+			"Tooltip": "Toggle Spotlight",
+			"Icon": "icons/spotlight",
+			"PropertyInspectorPath": "pi/info.html",
+			"Controllers": ["Keypad"],
+			"States": [{ "Image": "keys/spotlight", "ShowTitle": false }],
+			"SupportedInMultiActions": true
+		},
+		{
+			"UUID": "com.t01ik.macoscontrols.emoji",
+			"Name": "Emoji & Symbols",
+			"Tooltip": "Open the emoji picker for the focused text field",
+			"Icon": "icons/emoji",
+			"PropertyInspectorPath": "pi/info.html",
+			"Controllers": ["Keypad"],
+			"States": [{ "Image": "keys/emoji", "ShowTitle": false }],
+			"SupportedInMultiActions": true
+		},
+		{
+			"UUID": "com.t01ik.macoscontrols.dictation",
+			"Name": "Dictation",
+			"Tooltip": "Start or stop dictation in the focused app",
+			"Icon": "icons/dictation",
+			"PropertyInspectorPath": "pi/info.html",
+			"Controllers": ["Keypad"],
+			"States": [{ "Image": "keys/dictation", "ShowTitle": false }],
+			"SupportedInMultiActions": true
+		},
+		{
+			"UUID": "com.t01ik.macoscontrols.siri",
+			"Name": "Siri",
+			"Tooltip": "Activate Siri",
+			"Icon": "icons/siri",
+			"PropertyInspectorPath": "pi/info.html",
+			"Controllers": ["Keypad"],
+			"States": [{ "Image": "keys/siri", "ShowTitle": false }],
+			"SupportedInMultiActions": true
+		},
+		{
+			"UUID": "com.t01ik.macoscontrols.shortcut",
+			"Name": "Run Shortcut",
+			"Tooltip": "Run a shortcut from the Shortcuts app",
+			"Icon": "icons/shortcut",
+			"PropertyInspectorPath": "pi/shortcut.html",
+			"Controllers": ["Keypad"],
+			"States": [{ "Image": "keys/shortcut", "ShowTitle": false }],
+			"SupportedInMultiActions": true
+		},
+		{
+			"UUID": "com.t01ik.macoscontrols.monitor",
+			"Name": "System Monitor",
+			"Tooltip": "CPU, memory, GPU, temperatures, network and disk activity",
+			"Icon": "icons/monitor",
+			"PropertyInspectorPath": "pi/monitor.html",
+			"Controllers": ["Keypad"],
+			"States": [{ "Image": "keys/monitor", "ShowTitle": false }],
+			"SupportedInMultiActions": false
+		}
+	]
+}

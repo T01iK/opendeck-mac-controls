@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="pi.css" />
+		<script src="pi.js"></script>
+	</head>
+	<body>
+		<div class="row" data-controller="Keypad">
+			<label for="mode">Key action</label>
+			<div class="value">
+				<select id="mode" data-setting="mode" data-default="up">
+					<option value="up">Increase</option>
+					<option value="down">Decrease</option>
+					<option value="mute" id="mute-option">Mute / unmute</option>
+					<option value="set">Set to preset</option>
+					<option value="display">Show level only</option>
+				</select>
+			</div>
+		</div>
+		<div class="row">
+			<label for="step">Step (%)</label>
+			<div class="value"><input id="step" type="number" min="1" max="50" data-setting="step" data-default="5" /></div>
+		</div>
+		<div class="row" id="preset">
+			<label for="value">Preset (%)</label>
+			<div class="value"><input id="value" type="number" min="0" max="100" data-setting="value" data-default="50" /></div>
+		</div>
+		<p class="hint" data-controller="Keypad">Increase / Decrease repeat while the key is held.</p>
+		<p class="hint" data-controller="Encoder">
+			<span data-for-action="volume">Turn to adjust, press to mute.</span>
+			<span data-for-action="brightness">Turn to adjust, press to jump to the preset.</span>
+		</p>
+		<p class="hint" data-for-action="brightness">
+			Controls the built-in display and Apple displays (Studio Display, Pro Display XDR). Shows N/A when none is active, e.g.
+			with the lid closed.
+		</p>
+		<script>
+			const baseRefresh = refreshVisibility;
+			refreshVisibility = () => {
+				baseRefresh();
+				const encoder = actionInfo.payload.controller === "Encoder";
+				const brightness = document.body.dataset.action === "brightness";
+				// Mute only exists for volume.
+				if (brightness) document.getElementById("mute-option")?.remove();
+				// The preset is used by "Set to preset" keys and by the brightness dial press.
+				document.getElementById("preset").hidden = encoder ? !brightness : current("mode") !== "set";
+			};
+		</script>
+	</body>
+</html>

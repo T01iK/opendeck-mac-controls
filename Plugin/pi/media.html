@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="pi.css" />
+		<script src="pi.js"></script>
+	</head>
+	<body>
+		<div class="row" data-controller="Keypad">
+			<label for="command">Command</label>
+			<div class="value">
+				<select id="command" data-setting="command" data-default="playpause">
+					<option value="playpause">Play / Pause</option>
+					<option value="next">Next track</option>
+					<option value="previous">Previous track</option>
+				</select>
+			</div>
+		</div>
+		<div class="row" id="info-row">
+			<label for="showInfo">Now playing</label>
+			<div class="value">
+				<input id="showInfo" type="checkbox" data-setting="showInfo" data-default="true" />
+				<label for="showInfo">Show artwork, title and progress</label>
+			</div>
+		</div>
+		<p class="hint" data-controller="Encoder">Turn to skip tracks, press to play / pause.</p>
+		<p class="hint">
+			Now-playing info uses a private macOS API through Apple's <code>/usr/bin/perl</code> (the only way since macOS 15.4). If a
+			future macOS blocks it, the key falls back to a plain icon and media keys.
+		</p>
+		<script>
+			const baseRefresh = refreshVisibility;
+			refreshVisibility = () => {
+				baseRefresh();
+				document.getElementById("info-row").hidden = actionInfo.payload.controller !== "Encoder" && current("command") !== "playpause";
+			};
+		</script>
+	</body>
+</html>

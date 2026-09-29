@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="pi.css" />
+		<script src="pi.js"></script>
+		<style>
+			.hint {
+				margin-left: 12px;
+			}
+		</style>
+	</head>
+	<body>
+		<p class="hint" data-for-action="missioncontrol">Shows Mission Control. Press again to close it.</p>
+		<p class="hint" data-for-action="apps">Shows the Apps launcher (the replacement for Launchpad). Press again to close it.</p>
+		<p class="hint" data-for-action="spotlight">Toggles Spotlight. Works even when the ⌘Space shortcut is disabled.</p>
+		<p class="hint" data-for-action="siri">Activates Siri.</p>
+		<p class="hint" data-for-action="emoji,dictation">
+			Uses the <b>Edit</b> menu of the focused app, so it works in apps that accept text input. OpenDeck needs
+			<b>Accessibility</b> permission (System Settings → Privacy &amp; Security → Accessibility); macOS asks on first use.
+		</p>
+		<p class="hint" data-for-action="emoji">Falls back to ⌃⌘Space when the app has no Emoji &amp; Symbols menu item.</p>
+	</body>
+</html>

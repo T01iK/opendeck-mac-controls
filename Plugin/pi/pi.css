@@ -1,0 +1,78 @@
+html {
+	color-scheme: dark;
+	--bg: #2d2d2d;
+	--field: #3d3d3d;
+	--text: #d8d8d8;
+	--label: #9a9a9a;
+}
+
+body {
+	margin: 0;
+	padding: 6px 10px 12px 0;
+	background: var(--bg);
+	color: var(--label);
+	font: 9pt system-ui, -apple-system, sans-serif;
+	-webkit-font-smoothing: antialiased;
+}
+
+.row {
+	display: flex;
+	align-items: center;
+	min-height: 30px;
+	gap: 8px;
+}
+
+.row > label:first-child {
+	flex: 0 0 96px;
+	text-align: right;
+	padding-right: 4px;
+}
+
+.row > .value {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+}
+
+select,
+input[type="text"],
+input[type="number"],
+button {
+	box-sizing: border-box;
+	height: 24px;
+	color: var(--text);
+	background: var(--field);
+	border: 1px solid #303030;
+	font: 600 10pt system-ui, -apple-system, sans-serif;
+	padding: 0 6px;
+}
+
+select,
+input[type="text"] {
+	flex: 1;
+	min-width: 0;
+}
+
+input[type="number"] {
+	width: 64px;
+}
+
+button {
+	border-color: #969696;
+	cursor: pointer;
+}
+
+.hint {
+	margin: 6px 0 0 104px;
+	line-height: 1.4;
+}
+
+.hint code {
+	color: var(--text);
+}
+
+[hidden] {
+	display: none !important;
+}

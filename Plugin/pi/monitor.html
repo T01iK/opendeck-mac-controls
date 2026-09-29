@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="pi.css" />
+		<script src="pi.js"></script>
+	</head>
+	<body>
+		<div class="row">
+			<label for="metric">Metric</label>
+			<div class="value">
+				<select id="metric" data-setting="metric" data-default="cpu">
+					<optgroup label="Load">
+						<option value="cpu">CPU usage</option>
+						<option value="memory">Memory used</option>
+						<option value="gpu">GPU usage</option>
+					</optgroup>
+					<optgroup label="Temperature">
+						<option value="cpuTemp">CPU (SoC die)</option>
+						<option value="ssdTemp">SSD</option>
+						<option value="batteryTemp">Battery</option>
+					</optgroup>
+					<optgroup label="Network">
+						<option value="network">Download + upload</option>
+						<option value="networkIn">Download</option>
+						<option value="networkOut">Upload</option>
+					</optgroup>
+					<optgroup label="Disk">
+						<option value="disk">Read + write</option>
+						<option value="diskRead">Read</option>
+						<option value="diskWrite">Write</option>
+					</optgroup>
+				</select>
+			</div>
+		</div>
+		<div class="row">
+			<label for="graph">Graph</label>
+			<div class="value">
+				<input id="graph" type="checkbox" data-setting="graph" data-default="true" />
+				<label for="graph">Show last 30 seconds</label>
+			</div>
+		</div>
+		<div class="row">
+			<label for="press">On press</label>
+			<div class="value">
+				<select id="press" data-setting="press" data-default="activity">
+					<option value="activity">Open Activity Monitor</option>
+					<option value="none">Nothing</option>
+				</select>
+			</div>
+		</div>
+		<p class="hint">Updates every second. Network uses the primary interface (Wi-Fi or Ethernet).</p>
+	</body>
+</html>
