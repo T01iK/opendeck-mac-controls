@@ -2,7 +2,8 @@ import AppKit
 
 /// Runs a Shortcuts.app shortcut through the `shortcuts` command-line tool.
 ///
-/// Settings: `name` (shortcut name), `input` (optional text passed as input), `showName` (bool, default true).
+/// Settings: `name`, `shortcutId` (identifier, preferred when present), `input` (optional text passed as input),
+/// `showName` (bool, default true), `useIcon` (bool, default true — show the shortcut's own icon).
 final class ShortcutAction: ActionHandler {
 	let actionIDs = ["shortcut"]
 
@@ -12,12 +13,13 @@ final class ShortcutAction: ActionHandler {
 
 	func keyDown(_ instance: Instance) {
 		let name = instance.string("name", "")
-		guard !name.isEmpty else { return Plugin.shared.showAlert(instance) }
+		let target = instance.string("shortcutId", name)
+		guard !target.isEmpty else { return Plugin.shared.showAlert(instance) }
 		guard !running.contains(instance.context) else { return }
 		running.insert(instance.context)
 		render(instance)
 
-		var arguments = ["run", name]
+		var arguments = ["run", target]
 		var inputFile: URL?
 		let input = instance.string("input", "")
 		if !input.isEmpty {
@@ -45,16 +47,37 @@ final class ShortcutAction: ActionHandler {
 
 	func messageFromInspector(_ instance: Instance, payload: [String: Any]) {
 		guard payload["request"] as? String == "listShortcuts" else { return }
-		Self.run(["list"]) { status, output, _ in
-			let names = output.split(separator: "\n").map { String($0).trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
-			Plugin.shared.sendToInspector(instance, ["shortcuts": names.sorted { $0.localizedStandardCompare($1) == .orderedAscending }])
+		Self.run(["list", "--show-identifiers"]) { _, output, _ in
+			let shortcuts = output.split(separator: "\n").compactMap { Self.parseListLine(String($0)) }
+				.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+				.map { ["name": $0.name, "id": $0.id] }
+			Plugin.shared.sendToInspector(instance, ["shortcuts": shortcuts])
 		}
 	}
 
+	/// `shortcuts list --show-identifiers` prints "Name (UUID)"; names may contain parentheses themselves.
+	static func parseListLine(_ line: String) -> (name: String, id: String)? {
+		let trimmed = line.trimmingCharacters(in: .whitespaces)
+		guard !trimmed.isEmpty else { return nil }
+		guard trimmed.hasSuffix(")"), let open = trimmed.range(of: " (", options: .backwards) else { return (trimmed, "") }
+		let id = String(trimmed[open.upperBound..<trimmed.index(before: trimmed.endIndex)])
+		guard UUID(uuidString: id) != nil else { return (trimmed, "") }
+		return (String(trimmed[..<open.lowerBound]), id)
+	}
+
 	private func render(_ instance: Instance) {
-		let name = instance.string("name", "")
-		let symbol = running.contains(instance.context) ? "hourglass" : "square.2.layers.3d.fill"
+		let busy = running.contains(instance.context)
+		var name = instance.string("name", "")
+		let entry = ShortcutIcons.shared.entry(identifier: instance.string("shortcutId", ""), name: name)
+		// Follow renames when the shortcut is referenced by identifier.
+		if let entry { name = entry.name }
 		let label = instance.bool("showName", true) && !name.isEmpty ? name : nil
+
+		if instance.bool("useIcon", true), let entry, let icon = ShortcutIcons.shared.image(for: entry) {
+			Plugin.shared.setImage(instance, Render.imageKey(icon, label: label, busy: busy))
+			return
+		}
+		let symbol = busy ? "hourglass" : "square.2.layers.3d.fill"
 		Plugin.shared.setImage(instance, Render.iconKey(symbol: symbol, label: label, color: Render.Palette.purple, labelLines: 2))
 	}
 

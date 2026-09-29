@@ -9,7 +9,7 @@
 		<div class="row">
 			<label for="name">Shortcut</label>
 			<div class="value">
-				<select id="name" data-setting="name" data-default="">
+				<select id="shortcut">
 					<option value="">Loading…</option>
 				</select>
 				<button id="reload" title="Reload list">↻</button>
@@ -18,6 +18,13 @@
 		<div class="row">
 			<label for="input">Input text</label>
 			<div class="value"><input id="input" type="text" placeholder="optional" data-setting="input" data-default="" /></div>
+		</div>
+		<div class="row">
+			<label for="useIcon">Icon</label>
+			<div class="value">
+				<input id="useIcon" type="checkbox" data-setting="useIcon" data-default="true" />
+				<label for="useIcon">Use the shortcut's own icon</label>
+			</div>
 		</div>
 		<div class="row">
 			<label for="showName">Label</label>
@@ -32,15 +39,29 @@
 				sendToPlugin({ request: "listShortcuts" });
 			}
 
+			let shortcuts = [];
+
+			// The dropdown is keyed by identifier (names are not unique); older settings only have a name.
 			function onPluginMessage(payload) {
 				if (!payload.shortcuts) return;
-				const select = document.getElementById("name");
-				const selected = settings.name ?? "";
+				shortcuts = payload.shortcuts;
+				const select = document.getElementById("shortcut");
+				const selected =
+					shortcuts.find((s) => settings.shortcutId && s.id === settings.shortcutId) ?? shortcuts.find((s) => s.name === settings.name);
 				select.replaceChildren(new Option("Choose a shortcut…", ""));
-				for (const name of payload.shortcuts) select.add(new Option(name, name));
-				if (selected && !payload.shortcuts.includes(selected)) select.add(new Option(selected + " (missing)", selected));
-				select.value = selected;
+				for (const shortcut of shortcuts) select.add(new Option(shortcut.name, shortcut.id || shortcut.name));
+				if (!selected && settings.name) select.add(new Option(settings.name + " (missing)", "missing"));
+				select.value = selected ? selected.id || selected.name : settings.name ? "missing" : "";
 			}
+
+			document.getElementById("shortcut").onchange = (event) => {
+				const shortcut = shortcuts.find((s) => (s.id || s.name) === event.target.value);
+				if (!shortcut) return;
+				settings.name = shortcut.name;
+				if (shortcut.id) settings.shortcutId = shortcut.id;
+				else delete settings.shortcutId;
+				save();
+			};
 
 			document.getElementById("reload").onclick = () => sendToPlugin({ request: "listShortcuts" });
 		</script>

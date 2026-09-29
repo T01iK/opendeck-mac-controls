@@ -210,6 +210,26 @@ enum Render {
 		}
 	}
 
+	/// A full-colour icon (app, shortcut) with an optional caption, running dot and busy overlay.
+	static func imageKey(_ image: NSImage, label: String? = nil, runningDot: Bool = false, busy: Bool = false) -> String {
+		dataURI { rect in
+			fillBackground(rect)
+			let hasLabel = !(label ?? "").isEmpty
+			let iconRect = hasLabel ? CGRect(x: 26, y: 8, width: 92, height: 92) : CGRect(x: 14, y: 10, width: 116, height: 116)
+			image.draw(in: iconRect, from: .zero, operation: .sourceOver, fraction: busy ? 0.4 : 1, respectFlipped: true, hints: [.interpolation: NSImageInterpolation.high])
+			if busy {
+				drawSymbol("hourglass", in: iconRect.insetBy(dx: iconRect.width * 0.3, dy: iconRect.height * 0.3), color: .white)
+			}
+			if let label, hasLabel {
+				drawText(label, in: CGRect(x: 6, y: 102, width: 132, height: 30), size: 20)
+			}
+			if runningDot {
+				NSColor(calibratedWhite: 1, alpha: 0.85).setFill()
+				NSBezierPath(ovalIn: CGRect(x: 67, y: hasLabel ? 133 : 130, width: 10, height: 10)).fill()
+			}
+		}
+	}
+
 	/// Icon used in OpenDeck's action list (monochrome, transparent background).
 	static func listIcon(symbol: String, size: CGFloat) -> Data {
 		png(size: size) { rect in

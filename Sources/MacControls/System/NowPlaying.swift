@@ -93,6 +93,25 @@ final class NowPlaying {
 		}
 	}
 
+	private var pendingEmpty: DispatchWorkItem?
+
+	/// Applies new info. "Nothing playing" is delayed briefly because players report it transiently while switching.
+	private func apply(_ next: Info) {
+		pendingEmpty?.cancel()
+		pendingEmpty = nil
+		guard next.isEmpty, !info.isEmpty else {
+			info = next
+			onChange?()
+			return
+		}
+		let work = DispatchWorkItem { [weak self] in
+			self?.info = next
+			self?.onChange?()
+		}
+		pendingEmpty = work
+		DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: work)
+	}
+
 	private func helperExited(status: Int32) {
 		Log.error("Now playing helper exited with status \(status)")
 		available = false
@@ -131,14 +150,15 @@ final class NowPlaying {
 				next.elapsed = (json["elapsed"] as? NSNumber)?.doubleValue ?? 0
 				next.rate = (json["rate"] as? NSNumber)?.doubleValue ?? (next.playing ? 1 : 0)
 				if let ts = (json["timestamp"] as? NSNumber)?.doubleValue { next.timestamp = Date(timeIntervalSince1970: ts) }
+				let sameItem = next.title == info.title && next.artist == info.artist
 				if let artwork = json["artwork"] as? String {
-					next.artwork = artwork.isEmpty ? nil : Data(base64Encoded: artwork).flatMap(NSImage.init(data:))
-				} else {
+					next.artwork = Data(base64Encoded: artwork).flatMap(NSImage.init(data:))
+				} else if json["hasArtwork"] as? Bool ?? true || sameItem {
+					// Unchanged artwork, or the brief artwork-less update MediaRemote sends right after play/pause.
 					next.artwork = info.artwork
 				}
 			}
-			info = next
-			onChange?()
+			apply(next)
 		case "error":
 			Log.error("Now playing helper: \(json["message"] ?? "")")
 		default:

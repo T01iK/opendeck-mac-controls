@@ -11,6 +11,31 @@ final class LauncherAction: ActionHandler {
 		return dlsym(handle, "CoreDockSendNotification").map { unsafeBitCast($0, to: CoreDockSendNotification.self) }
 	}()
 
+	/// Apps whose icon can replace the SF Symbol (setting `systemIcon`).
+	private let systemIconPaths = [
+		"missioncontrol": "/System/Applications/Mission Control.app",
+		"apps": "/System/Applications/Apps.app",
+		"spotlight": "/System/Library/CoreServices/Spotlight.app",
+		"siri": "/System/Applications/Siri.app",
+	]
+
+	func willAppear(_ instance: Instance) {
+		guard instance.bool("systemIcon", false), let path = systemIconPaths[instance.action], FileManager.default.fileExists(atPath: path) else {
+			return
+		}
+		Plugin.shared.setImage(instance, Render.imageKey(NSWorkspace.shared.icon(forFile: path)))
+	}
+
+	func settingsChanged(_ instance: Instance) {
+		if instance.bool("systemIcon", false) {
+			willAppear(instance)
+		} else {
+			// Switching the option off: an empty image restores the default from the manifest. Not done on appear so a
+			// custom image set in OpenDeck is left alone.
+			Plugin.shared.setImage(instance, "")
+		}
+	}
+
 	func keyDown(_ instance: Instance) {
 		let ok: Bool
 		switch instance.action {

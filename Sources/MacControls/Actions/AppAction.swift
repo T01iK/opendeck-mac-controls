@@ -78,23 +78,12 @@ final class AppAction: ActionHandler {
 			Plugin.shared.setImage(instance, Render.iconKey(symbol: "questionmark.app.dashed", label: "Choose app", color: Render.Palette.secondary))
 			return
 		}
-		let icon = icon(for: url)
 		let name = FileManager.default.displayName(atPath: url.path).replacingOccurrences(of: ".app", with: "")
-		let showName = instance.bool("showName", false)
-		let running = instance.bool("showRunning", true) && runningApp(url, instance) != nil
-
-		Plugin.shared.setImage(instance, Render.dataURI { rect in
-			Render.fillBackground(rect)
-			let iconRect = showName ? CGRect(x: 26, y: 8, width: 92, height: 92) : CGRect(x: 14, y: 10, width: 116, height: 116)
-			icon.draw(in: iconRect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: [.interpolation: NSImageInterpolation.high])
-			if showName {
-				Render.drawText(name, in: CGRect(x: 6, y: 102, width: 132, height: 30), size: 20)
-			}
-			if running {
-				NSColor(calibratedWhite: 1, alpha: 0.85).setFill()
-				NSBezierPath(ovalIn: CGRect(x: 67, y: showName ? 133 : 130, width: 10, height: 10)).fill()
-			}
-		})
+		Plugin.shared.setImage(instance, Render.imageKey(
+			icon(for: url),
+			label: instance.bool("showName", false) ? name : nil,
+			runningDot: instance.bool("showRunning", true) && runningApp(url, instance) != nil
+		))
 	}
 
 	/// Apps in the standard locations (one folder level deep, e.g. /Applications/Utilities), deduplicated by bundle id.

@@ -4,7 +4,8 @@
 // processes. This library is therefore loaded into /usr/bin/perl (see nowplaying.pl), which is allowed to use it.
 //
 // Protocol:
-//   stdout: one JSON object per line, {"type":"info", ...} whenever the now-playing state changes.
+//   stdout: one JSON object per line, {"type":"info", ...} whenever the now-playing state changes. "artwork" (base64
+//           JPEG) is only included when it changed; "hasArtwork" says whether the item currently has any.
 //   stdin:  one command per line: togglePlayPause | play | pause | stop | next | previous
 // The helper exits when stdin is closed, i.e. when the plugin goes away.
 
@@ -83,8 +84,12 @@ static void refresh(void) {
 				NSDate *timestamp = info[@"kMRMediaRemoteNowPlayingInfoTimestamp"];
 				if ([timestamp isKindOfClass:[NSDate class]]) out[@"timestamp"] = @(timestamp.timeIntervalSince1970);
 
+				// Artwork is only sent when it changes. Right after play/pause MediaRemote briefly reports the item without
+				// artwork; "hasArtwork": false lets the plugin keep showing the previous image for the same item.
 				NSData *artwork = info[@"kMRMediaRemoteNowPlayingInfoArtworkData"];
-				if ([artwork isKindOfClass:[NSData class]] && artwork.length > 0) {
+				BOOL hasArtwork = [artwork isKindOfClass:[NSData class]] && artwork.length > 0;
+				out[@"hasArtwork"] = @(hasArtwork);
+				if (hasArtwork) {
 					NSUInteger hash = artwork.length ^ (artwork.hash << 1);
 					if (hash != lastArtworkHash) {
 						NSString *encoded = thumbnailBase64(artwork);
@@ -93,8 +98,8 @@ static void refresh(void) {
 							lastArtworkHash = hash;
 						}
 					}
-				} else if (lastArtworkHash != 0) {
-					out[@"artwork"] = @"";
+				} else {
+					// Forget the hash so the artwork is sent again once it reappears.
 					lastArtworkHash = 0;
 				}
 
