@@ -1,11 +1,22 @@
 import Darwin
 import Foundation
 import IOKit
+import IOKit.ps
 import SystemConfiguration
 
 /// Samplers for CPU, memory, GPU, temperatures, network and disk throughput.
 /// Rates are computed from the difference between two consecutive `sample()` calls.
 final class SystemStats {
+	struct Battery {
+		var percent: Double
+		var charging: Bool
+		var charged: Bool
+		var onAC: Bool
+		var minutesToEmpty: Int? // nil while macOS is still estimating
+		var minutesToFull: Int?
+		var lowPowerMode: Bool
+	}
+
 	struct Snapshot {
 		var cpu: Double? // %
 		var memoryUsed: Double? // bytes
@@ -18,6 +29,7 @@ final class SystemStats {
 		var networkOut: Double? // bytes/s
 		var diskRead: Double? // bytes/s
 		var diskWrite: Double? // bytes/s
+		var battery: Battery?
 	}
 
 	private var previousTicks: [UInt64]?
@@ -27,7 +39,7 @@ final class SystemStats {
 	let memoryTotal = Double(ProcessInfo.processInfo.physicalMemory)
 
 	/// Only computes what is requested to keep idle cost low.
-	func sample(cpu: Bool, memory: Bool, gpu: Bool, temperatures wantTemps: Bool, network: Bool, disk: Bool) -> Snapshot {
+	func sample(cpu: Bool, memory: Bool, gpu: Bool, temperatures wantTemps: Bool, network: Bool, disk: Bool, battery: Bool = false) -> Snapshot {
 		var snapshot = Snapshot(memoryTotal: memoryTotal)
 		if cpu { snapshot.cpu = cpuUsage() }
 		if memory { snapshot.memoryUsed = memoryUsed() }
@@ -46,6 +58,7 @@ final class SystemStats {
 		}
 		if network { (snapshot.networkIn, snapshot.networkOut) = networkRates() }
 		if disk { (snapshot.diskRead, snapshot.diskWrite) = diskRates() }
+		if battery { snapshot.battery = batteryStatus() }
 		return snapshot
 	}
 
@@ -106,6 +119,33 @@ final class SystemStats {
 			best = max(best ?? 0, utilisation)
 		}
 		return best
+	}
+
+	// MARK: Battery
+
+	/// The internal battery via IOPowerSources; nil on Macs without one.
+	private func batteryStatus() -> Battery? {
+		guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
+		      let sources = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef]
+		else { return nil }
+		for source in sources {
+			guard let description = IOPSGetPowerSourceDescription(info, source)?.takeUnretainedValue() as? [String: Any],
+			      description[kIOPSTypeKey] as? String == kIOPSInternalBatteryType,
+			      let current = description[kIOPSCurrentCapacityKey] as? Int,
+			      let max = description[kIOPSMaxCapacityKey] as? Int, max > 0
+			else { continue }
+			let minutes = { (key: String) -> Int? in (description[key] as? Int).flatMap { $0 >= 0 ? $0 : nil } }
+			return Battery(
+				percent: Double(current) / Double(max) * 100,
+				charging: description[kIOPSIsChargingKey] as? Bool ?? false,
+				charged: description[kIOPSIsChargedKey] as? Bool ?? false,
+				onAC: description[kIOPSPowerSourceStateKey] as? String == kIOPSACPowerValue,
+				minutesToEmpty: minutes(kIOPSTimeToEmptyKey),
+				minutesToFull: minutes(kIOPSTimeToFullChargeKey),
+				lowPowerMode: ProcessInfo.processInfo.isLowPowerModeEnabled
+			)
+		}
+		return nil
 	}
 
 	// MARK: Network

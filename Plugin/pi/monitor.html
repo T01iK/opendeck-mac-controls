@@ -15,6 +15,9 @@
 						<option value="memory">Memory used</option>
 						<option value="gpu">GPU usage</option>
 					</optgroup>
+					<optgroup label="Power">
+						<option value="battery">Battery</option>
+					</optgroup>
 					<optgroup label="Temperature">
 						<option value="cpuTemp">CPU (SoC die)</option>
 						<option value="ssdTemp">SSD</option>
@@ -33,7 +36,7 @@
 				</select>
 			</div>
 		</div>
-		<div class="row">
+		<div class="row" id="graph-row">
 			<label for="graph">Graph</label>
 			<div class="value">
 				<input id="graph" type="checkbox" data-setting="graph" data-default="true" />
@@ -44,11 +47,21 @@
 			<label for="press">On press</label>
 			<div class="value">
 				<select id="press" data-setting="press" data-default="activity">
-					<option value="activity">Open Activity Monitor</option>
+					<option value="activity" id="open-option">Open Activity Monitor</option>
 					<option value="none">Nothing</option>
 				</select>
 			</div>
 		</div>
 		<p class="hint">Updates every second. Network uses the primary interface (Wi-Fi or Ethernet).</p>
+		<script>
+			const baseRefresh = refreshVisibility;
+			refreshVisibility = () => {
+				baseRefresh();
+				// The battery has its own layout without a history graph, and opens Battery settings instead.
+				const battery = current("metric") === "battery";
+				document.getElementById("graph-row").hidden = battery;
+				document.getElementById("open-option").textContent = battery ? "Open Battery settings" : "Open Activity Monitor";
+			};
+		</script>
 	</body>
 </html>

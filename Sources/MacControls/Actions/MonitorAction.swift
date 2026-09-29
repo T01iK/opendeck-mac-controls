@@ -3,11 +3,12 @@ import AppKit
 /// Live hardware stats on a key with a history graph.
 ///
 /// Settings: `metric` (see `Metric`), `graph` (bool, default true), `press` ("activity" | "none").
+/// "activity" opens Activity Monitor, or Battery settings for the battery metric.
 final class MonitorAction: ActionHandler {
 	let actionIDs = ["monitor"]
 
 	enum Metric: String, CaseIterable {
-		case cpu, memory, gpu, cpuTemp, ssdTemp, batteryTemp, network, networkIn, networkOut, disk, diskRead, diskWrite
+		case cpu, memory, gpu, cpuTemp, ssdTemp, batteryTemp, network, networkIn, networkOut, disk, diskRead, diskWrite, battery
 	}
 
 	private let stats = SystemStats()
@@ -36,6 +37,10 @@ final class MonitorAction: ActionHandler {
 
 	func keyDown(_ instance: Instance) {
 		guard instance.string("press", "activity") == "activity" else { return }
+		if metric(instance) == .battery {
+			NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Battery-Settings.extension")!)
+			return
+		}
 		NSWorkspace.shared.openApplication(
 			at: URL(fileURLWithPath: "/System/Applications/Utilities/Activity Monitor.app"),
 			configuration: NSWorkspace.OpenConfiguration()
@@ -59,8 +64,10 @@ final class MonitorAction: ActionHandler {
 		let snapshot = stats.sample(
 			cpu: has([.cpu]), memory: has([.memory]), gpu: has([.gpu]),
 			temperatures: has([.cpuTemp, .ssdTemp, .batteryTemp]),
-			network: has([.network, .networkIn, .networkOut]), disk: has([.disk, .diskRead, .diskWrite])
+			network: has([.network, .networkIn, .networkOut]), disk: has([.disk, .diskRead, .diskWrite]),
+			battery: has([.battery])
 		)
+		battery = snapshot.battery
 		record("cpu", snapshot.cpu)
 		record("memory", snapshot.memoryUsed.map { $0 / snapshot.memoryTotal * 100 })
 		record("gpu", snapshot.gpu)
@@ -75,6 +82,7 @@ final class MonitorAction: ActionHandler {
 	}
 
 	private var memoryUsedBytes: Double?
+	private var battery: SystemStats.Battery?
 
 	private func record(_ key: String, _ value: Double?) {
 		guard let value else { return }
@@ -103,6 +111,7 @@ final class MonitorAction: ActionHandler {
 		case .diskWrite: image = rateKey("DISK W", "diskWrite", color: Render.Palette.orange, graph: graph)
 		case .network: image = dualRateKey("NETWORK", ("↓", "networkIn"), ("↑", "networkOut"), graph: graph)
 		case .disk: image = dualRateKey("DISK", ("R", "diskRead"), ("W", "diskWrite"), graph: graph)
+		case .battery: image = batteryKey()
 		}
 		Plugin.shared.setImage(instance, image)
 	}
@@ -176,6 +185,63 @@ final class MonitorAction: ActionHandler {
 				Render.drawSparkline(b, maximum: maximum, in: area, color: Render.Palette.orange, capacity: capacity, fill: false)
 			}
 		}
+	}
+
+	/// Percentage, a battery drawing filled to the charge level and the charging state / time remaining.
+	/// Colours follow macOS: green while charging, yellow in Low Power Mode, red at 20% or below.
+	private func batteryKey() -> String {
+		guard let battery else {
+			return Render.iconKey(symbol: "battery.0percent", label: "No battery", color: Render.Palette.secondary)
+		}
+		let color: NSColor
+		if battery.lowPowerMode {
+			color = Render.Palette.yellow
+		} else if battery.charging || battery.charged {
+			color = Render.Palette.green
+		} else if battery.percent <= 20 {
+			color = Render.Palette.red
+		} else {
+			color = Render.Palette.text
+		}
+
+		let status: String
+		if battery.charged {
+			status = "Charged"
+		} else if battery.charging {
+			status = battery.minutesToFull.map { "Full in " + Self.formatMinutes($0) } ?? "Charging"
+		} else if battery.onAC {
+			status = "On AC"
+		} else {
+			status = battery.minutesToEmpty.map { Self.formatMinutes($0) + " left" } ?? "Estimating…"
+		}
+
+		return Render.dataURI { rect in
+			Render.fillBackground(rect)
+			Render.drawText("BATTERY", in: CGRect(x: 10, y: 6, width: 124, height: 24), size: 18, weight: .bold, color: Render.Palette.secondary, alignment: .left)
+			Render.drawValue("\(Int(battery.percent.rounded()))", unit: "%", in: CGRect(x: 6, y: 30, width: 132, height: 48), size: 42)
+
+			// Battery body, terminal nub and fill.
+			let body = CGRect(x: 26, y: 84, width: 84, height: 30)
+			let outline = NSBezierPath(roundedRect: body, xRadius: 7, yRadius: 7)
+			outline.lineWidth = 3
+			Render.Palette.secondary.setStroke()
+			outline.stroke()
+			Render.Palette.secondary.setFill()
+			NSBezierPath(roundedRect: CGRect(x: body.maxX + 3, y: body.midY - 6, width: 5, height: 12), xRadius: 2, yRadius: 2).fill()
+			var fill = body.insetBy(dx: 5, dy: 5)
+			fill.size.width = max(3, fill.width * CGFloat(min(100, battery.percent)) / 100)
+			color.setFill()
+			NSBezierPath(roundedRect: fill, xRadius: 3, yRadius: 3).fill()
+			if battery.charging || battery.onAC {
+				Render.drawSymbol(battery.charging ? "bolt.fill" : "powerplug.fill", in: body.insetBy(dx: 30, dy: 4), color: .white, weight: .heavy)
+			}
+
+			Render.drawText(status, in: CGRect(x: 6, y: 118, width: 132, height: 22), size: 17, color: Render.Palette.secondary)
+		}
+	}
+
+	static func formatMinutes(_ minutes: Int) -> String {
+		minutes >= 60 ? "\(minutes / 60):" + String(format: "%02d", minutes % 60) : "\(minutes) min"
 	}
 
 	/// Label, big value and an optional graph in the lower third.

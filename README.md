@@ -11,7 +11,7 @@ Native macOS actions for [OpenDeck](https://github.com/nekename/OpenDeck), writt
 | **Emoji & Symbols**, **Dictation** | open for the focused text field | – |
 | **Run Shortcut** | runs a Shortcuts.app shortcut (optional text input) with its own icon, ✓ / ⚠ feedback | – |
 | **Open App** | opens / focuses an app (hides it if already in front); shows its icon and a running dot | – |
-| **System Monitor** | CPU, RAM, GPU, CPU/SSD/battery temperature, network ↓↑, disk R/W, with a 30 s graph | – |
+| **System Monitor** | CPU, RAM, GPU, battery (level, charging, time left), CPU/SSD/battery temperature, network ↓↑, disk R/W, with a 30 s graph | – |
 
 ## Build & install
 
