@@ -111,6 +111,30 @@ enum Render {
 		string.draw(with: target, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine])
 	}
 
+	/// Draws a number with a smaller unit after it ("346" + "KB/s"), shrinking both until they fit the width.
+	static func drawValue(
+		_ number: String, unit: String, in rect: CGRect, size: CGFloat, color: NSColor = Palette.text, alignment: NSTextAlignment = .center
+	) {
+		var fontSize = size
+		var string = NSMutableAttributedString()
+		while true {
+			let paragraph = NSMutableParagraphStyle()
+			paragraph.alignment = alignment
+			string = NSMutableAttributedString(string: number, attributes: [
+				.font: NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .bold), .foregroundColor: color, .paragraphStyle: paragraph,
+			])
+			if !unit.isEmpty {
+				string.append(NSAttributedString(string: " " + unit, attributes: [
+					.font: NSFont.systemFont(ofSize: fontSize * 0.5, weight: .semibold), .foregroundColor: Palette.secondary, .paragraphStyle: paragraph,
+				]))
+			}
+			if string.size().width <= rect.width || fontSize <= 10 { break }
+			fontSize -= 1
+		}
+		let height = string.size().height
+		string.draw(with: CGRect(x: rect.minX, y: rect.midY - height / 2, width: rect.width, height: height), options: .usesLineFragmentOrigin)
+	}
+
 	static func drawBar(_ rect: CGRect, fraction: Double, color: NSColor) {
 		let radius = rect.height / 2
 		Palette.track.setFill()
@@ -166,9 +190,15 @@ enum Render {
 	}
 
 	/// Large symbol with an optional caption underneath (launchers, shortcuts, media controls).
-	static func iconKey(symbol: String, label: String? = nil, color: NSColor = Palette.text, background: NSColor = Palette.background, labelLines: Int = 1) -> String {
+	static func iconKey(
+		symbol: String, label: String? = nil, color: NSColor = Palette.text, background: NSColor = Palette.background,
+		labelLines: Int = 1, badge: String? = nil
+	) -> String {
 		dataURI { rect in
 			fillBackground(rect, background)
+			if let badge {
+				drawSymbol(badge, in: CGRect(x: 108, y: 8, width: 28, height: 28), color: Palette.secondary)
+			}
 			if let label, !label.isEmpty {
 				let symbolHeight: CGFloat = labelLines > 1 ? 50 : 62
 				drawSymbol(symbol, in: CGRect(x: 22, y: 14, width: 100, height: symbolHeight), color: color)

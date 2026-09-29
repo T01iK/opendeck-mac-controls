@@ -122,6 +122,16 @@
 			"SupportedInMultiActions": true
 		},
 		{
+			"UUID": "com.t01ik.macoscontrols.openapp",
+			"Name": "Open App",
+			"Tooltip": "Open an app, or bring it to the front",
+			"Icon": "icons/openapp",
+			"PropertyInspectorPath": "pi/openapp.html",
+			"Controllers": ["Keypad"],
+			"States": [{ "Image": "keys/openapp", "ShowTitle": false }],
+			"SupportedInMultiActions": true
+		},
+		{
 			"UUID": "com.t01ik.macoscontrols.shortcut",
 			"Name": "Run Shortcut",
 			"Tooltip": "Run a shortcut from the Shortcuts app",

@@ -19,6 +19,13 @@
 			</div>
 		</div>
 		<div class="row">
+			<label for="showLevel">Level</label>
+			<div class="value">
+				<input id="showLevel" type="checkbox" data-setting="showLevel" data-default="true" data-default-encoder="false" />
+				<label for="showLevel">Show percentage and bar</label>
+			</div>
+		</div>
+		<div class="row" id="step-row">
 			<label for="step">Step (%)</label>
 			<div class="value"><input id="step" type="number" min="1" max="50" data-setting="step" data-default="5" /></div>
 		</div>
@@ -26,7 +33,7 @@
 			<label for="value">Preset (%)</label>
 			<div class="value"><input id="value" type="number" min="0" max="100" data-setting="value" data-default="50" /></div>
 		</div>
-		<p class="hint" data-controller="Keypad">Increase / Decrease repeat while the key is held.</p>
+		<p class="hint" id="repeat-hint">Increase / Decrease repeat while the key is held.</p>
 		<p class="hint" data-controller="Encoder">
 			<span data-for-action="volume">Turn to adjust, press to mute.</span>
 			<span data-for-action="brightness">Turn to adjust, press to jump to the preset.</span>
@@ -45,6 +52,10 @@
 				if (brightness) document.getElementById("mute-option")?.remove();
 				// The preset is used by "Set to preset" keys and by the brightness dial press.
 				document.getElementById("preset").hidden = encoder ? !brightness : current("mode") !== "set";
+				// The step applies to dials and to Increase / Decrease keys.
+				const stepping = ["up", "down"].includes(current("mode"));
+				document.getElementById("step-row").hidden = !encoder && !stepping;
+				document.getElementById("repeat-hint").hidden = encoder || !stepping;
 			};
 		</script>
 	</body>

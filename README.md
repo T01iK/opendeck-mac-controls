@@ -10,6 +10,7 @@ Native macOS actions for [OpenDeck](https://github.com/nekename/OpenDeck), writt
 | **Mission Control**, **Apps (Launchpad)**, **Spotlight**, **Siri** | toggle / activate | – |
 | **Emoji & Symbols**, **Dictation** | open for the focused text field | – |
 | **Run Shortcut** | runs a Shortcuts.app shortcut (optional text input), ✓ / ⚠ feedback | – |
+| **Open App** | opens / focuses an app (hides it if already in front); shows its icon and a running dot | – |
 | **System Monitor** | CPU, RAM, GPU, CPU/SSD/battery temperature, network ↓↑, disk R/W, with a 30 s graph | – |
 
 ## Build & install
@@ -25,8 +26,14 @@ Logs: `~/Library/Logs/MacControls.log`.
 
 ## Permissions
 
-- **Accessibility** for OpenDeck (System Settings → Privacy & Security → Accessibility) — needed by *Emoji & Symbols*,
-  *Dictation*, and the media-key fallback. macOS prompts on first use.
+Only **Emoji & Symbols** and **Dictation** need a permission. On first use macOS shows
+*"OpenDeck.app wants to control this Mac and access your data"* — that is the **Accessibility** permission
+(System Settings → Privacy & Security → Accessibility → OpenDeck).
+
+This is unavoidable: macOS has no API to open the emoji picker or start dictation from another process, and the Globe (🌐)
+key cannot be simulated, so the plugin has to press the *Edit* menu items of the focused app (or send ⌃⌘Space), which
+requires Accessibility. The permission is granted to OpenDeck as a whole (plugins run as its child processes), so every
+OpenDeck plugin can use it. If you do not use these two actions you can simply deny it — everything else works without it.
 
 ## How it works / limitations
 
@@ -43,7 +50,10 @@ Logs: `~/Library/Logs/MacControls.log`.
 - **Emoji / Dictation** — there is no public API and the Globe key cannot be synthesised; the plugin presses the
   *Edit → Emoji & Symbols* / *Start Dictation* menu items AppKit adds to every app (so it needs an app with a text focus).
   Emoji falls back to ⌃⌘Space.
-- **Shortcuts** — `/usr/bin/shortcuts run`.
+- **Shortcuts** — `/usr/bin/shortcuts run`, started with plain `posix_spawn`: launched through Foundation's `Process`
+  from under OpenDeck it fails with "shortcut not found".
+- **Open App** — `NSWorkspace`; the app list covers /Applications, /System/Applications and ~/Applications (plus one
+  subfolder level).
 - **Temperatures** — private IOHIDEventSystem sensors (no root needed). CPU = average of the SoC `tdie` sensors.
 
 ## Layout

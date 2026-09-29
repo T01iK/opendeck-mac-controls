@@ -81,6 +81,14 @@ class LevelAction: ActionHandler {
 				"indicator": Int(((level ?? 0) * 100).rounded()),
 			])
 		}
+		// Dials usually have no room for the level (and devices may show it themselves), so they default to icon only.
+		guard instance.bool("showLevel", !instance.isEncoder) else {
+			let tint = level == nil ? Render.Palette.secondary : color
+			Plugin.shared.setImage(instance, Render.iconKey(
+				symbol: symbol(for: level), color: tint, badge: instance.isEncoder ? nil : badge(for: instance)
+			))
+			return
+		}
 		Plugin.shared.setImage(instance, Render.levelKey(
 			symbol: symbol(for: level),
 			value: valueText(level),

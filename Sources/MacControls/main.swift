@@ -12,7 +12,7 @@ func generateIcons(into directory: URL) throws {
 		"volume": "speaker.wave.2.fill", "brightness": "sun.max.fill", "media": "playpause.fill",
 		"missioncontrol": "rectangle.3.group.fill", "apps": "square.grid.3x3.fill", "spotlight": "magnifyingglass",
 		"emoji": "face.smiling", "dictation": "mic.fill", "siri": "waveform",
-		"shortcut": "square.2.layers.3d.fill", "monitor": "gauge.with.dots.needle.67percent",
+		"shortcut": "square.2.layers.3d.fill", "openapp": "arrow.up.forward.app.fill", "monitor": "gauge.with.dots.needle.67percent",
 	]
 	for (name, symbol) in listIcons {
 		let base = name == "plugin" ? 28.0 : 20.0
@@ -32,6 +32,7 @@ func generateIcons(into directory: URL) throws {
 		"dictation": ("mic.fill", "Dictation", palette.red),
 		"siri": ("waveform", "Siri", palette.purple),
 		"shortcut": ("square.2.layers.3d.fill", "Shortcut", palette.purple),
+		"openapp": ("arrow.up.forward.app.fill", "Open App", palette.blue),
 		"monitor": ("gauge.with.dots.needle.67percent", "Monitor", palette.green),
 	]
 	for (name, spec) in keyImages {
@@ -75,6 +76,7 @@ Plugin.shared = Plugin(port: port, uuid: uuid, registerEvent: registerEvent, han
 	MediaAction(),
 	LauncherAction(),
 	ShortcutAction(),
+	AppAction(),
 	MonitorAction(),
 ])
 Plugin.shared.start()

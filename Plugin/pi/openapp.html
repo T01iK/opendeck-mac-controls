@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="pi.css" />
+		<script src="pi.js"></script>
+	</head>
+	<body>
+		<div class="row">
+			<label for="path">App</label>
+			<div class="value">
+				<select id="path" data-setting="path" data-default="">
+					<option value="">Loading…</option>
+				</select>
+				<button id="reload" title="Reload list">↻</button>
+			</div>
+		</div>
+		<div class="row">
+			<label for="whenFrontmost">If in front</label>
+			<div class="value">
+				<select id="whenFrontmost" data-setting="whenFrontmost" data-default="hide">
+					<option value="hide">Hide it</option>
+					<option value="nothing">Do nothing</option>
+				</select>
+			</div>
+		</div>
+		<div class="row">
+			<label for="showName">Label</label>
+			<div class="value">
+				<input id="showName" type="checkbox" data-setting="showName" data-default="false" />
+				<label for="showName">Show app name</label>
+			</div>
+		</div>
+		<div class="row">
+			<label for="showRunning">Indicator</label>
+			<div class="value">
+				<input id="showRunning" type="checkbox" data-setting="showRunning" data-default="true" />
+				<label for="showRunning">Dot when running</label>
+			</div>
+		</div>
+		<p class="hint">Opens the app, or brings it to the front if it is already running.</p>
+		<script>
+			let apps = [];
+
+			function onConnected() {
+				sendToPlugin({ request: "listApps" });
+			}
+
+			function onPluginMessage(payload) {
+				if (!payload.apps) return;
+				apps = payload.apps;
+				const select = document.getElementById("path");
+				const selected = settings.path ?? "";
+				select.replaceChildren(new Option("Choose an app…", ""));
+				for (const app of apps) select.add(new Option(app.name, app.path));
+				if (selected && !apps.some((app) => app.path === selected)) select.add(new Option(selected.split("/").pop() + " (missing)", selected));
+				select.value = selected;
+			}
+
+			// Store the bundle id alongside the path so the key keeps working if the app is moved.
+			const baseSave = save;
+			save = () => {
+				const app = apps.find((app) => app.path === document.getElementById("path").value);
+				if (app) settings.bundleId = app.bundleId;
+				baseSave();
+			};
+
+			document.getElementById("reload").onclick = () => sendToPlugin({ request: "listApps" });
+		</script>
+	</body>
+</html>

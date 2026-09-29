@@ -1,6 +1,7 @@
 // Shared property inspector logic.
 //
-// Form fields with `data-setting="key"` are bound to the action's settings (`data-default` supplies the initial value).
+// Form fields with `data-setting="key"` are bound to the action's settings (`data-default` supplies the initial value,
+// `data-default-encoder` overrides it for dials).
 // Elements with `data-show="key=a,b"` are only visible when that setting has one of the listed values, and
 // `data-controller="Encoder|Keypad"` only for that controller type. Pages may define `onPluginMessage(payload)`
 // and `onConnected()` hooks.
@@ -36,7 +37,7 @@ function fields() {
 function load() {
 	for (const field of fields()) {
 		const key = field.dataset.setting;
-		const value = key in settings ? settings[key] : parse(field, field.dataset.default ?? "");
+		const value = key in settings ? settings[key] : parse(field, defaultFor(field));
 		if (field.type === "checkbox") field.checked = Boolean(value);
 		else if (field.tagName === "SELECT" && value !== "" && ![...field.options].some((o) => o.value === String(value))) {
 			// Keep values that are not (yet) in the list, e.g. a shortcut that was renamed.
@@ -47,6 +48,11 @@ function load() {
 		field.onchange = save;
 	}
 	refreshVisibility();
+}
+
+function defaultFor(field) {
+	if (actionInfo.payload.controller === "Encoder" && field.dataset.defaultEncoder !== undefined) return field.dataset.defaultEncoder;
+	return field.dataset.default ?? "";
 }
 
 function parse(field, raw) {
@@ -71,7 +77,7 @@ function sendToPlugin(payload) {
 function current(key) {
 	if (key in settings) return String(settings[key]);
 	const field = document.querySelector(`[data-setting="${key}"]`);
-	return field ? String(field.dataset.default ?? "") : "";
+	return field ? String(defaultFor(field)) : "";
 }
 
 function refreshVisibility() {

@@ -142,7 +142,8 @@ final class MonitorAction: ActionHandler {
 
 	private func rateKey(_ label: String, _ key: String, color: NSColor, graph: Bool) -> String {
 		let values = history[key] ?? []
-		return statKey(label: label, value: values.last.map(Self.formatRate) ?? "–", color: color, graph: graph) { rect in
+		let (number, unit) = values.last.map(Self.splitRate) ?? ("–", "")
+		return statKey(label: label, value: number, unit: unit, color: color, graph: graph) { rect in
 			Render.drawSparkline(values, maximum: Self.scale(values), in: rect, color: color, capacity: capacity)
 		}
 	}
@@ -153,12 +154,21 @@ final class MonitorAction: ActionHandler {
 		let maximum = Self.scale(a + b)
 		return Render.dataURI { rect in
 			Render.fillBackground(rect)
-			Render.drawText(label, in: CGRect(x: 10, y: 6, width: 124, height: 24), size: 18, weight: .bold, color: Render.Palette.secondary, alignment: .left)
 			let lines = [(first.0, a.last, Render.Palette.teal), (second.0, b.last, Render.Palette.orange)]
+			if graph {
+				Render.drawText(label, in: CGRect(x: 10, y: 6, width: 124, height: 24), size: 18, weight: .bold, color: Render.Palette.secondary, alignment: .left)
+			} else {
+				Render.drawText(label, in: CGRect(x: 8, y: 12, width: 128, height: 26), size: 20, weight: .bold, color: Render.Palette.secondary)
+			}
+			// Without a graph the two values get the whole lower part of the key.
+			let top: CGFloat = graph ? 32 : 42
+			let lineHeight: CGFloat = graph ? 30 : 46
+			let valueSize: CGFloat = graph ? 26 : 38
 			for (index, line) in lines.enumerated() {
-				let y: CGFloat = 32 + CGFloat(index) * 30
-				Render.drawText(line.0, in: CGRect(x: 10, y: y, width: 22, height: 30), size: 22, weight: .bold, color: line.2, alignment: .left)
-				Render.drawText(line.1.map(Self.formatRate) ?? "–", in: CGRect(x: 32, y: y, width: 104, height: 30), size: 24, weight: .bold, alignment: .right, monospacedDigits: true)
+				let y = top + CGFloat(index) * lineHeight
+				Render.drawText(line.0, in: CGRect(x: 6, y: y, width: 26, height: lineHeight), size: graph ? 22 : 28, weight: .bold, color: line.2, alignment: .left)
+				let (number, unit) = line.1.map(Self.splitRate) ?? ("–", "")
+				Render.drawValue(number, unit: unit, in: CGRect(x: 30, y: y, width: 108, height: lineHeight), size: valueSize, alignment: .right)
 			}
 			if graph {
 				let area = CGRect(x: 6, y: 96, width: 132, height: 42)
@@ -169,16 +179,16 @@ final class MonitorAction: ActionHandler {
 	}
 
 	/// Label, big value and an optional graph in the lower third.
-	private func statKey(label: String, value: String, color: NSColor, graph: Bool, drawGraph: (CGRect) -> Void) -> String {
+	private func statKey(label: String, value: String, unit: String = "", color: NSColor, graph: Bool, drawGraph: (CGRect) -> Void) -> String {
 		Render.dataURI { rect in
 			Render.fillBackground(rect)
 			if graph {
 				Render.drawText(label, in: CGRect(x: 10, y: 6, width: 124, height: 24), size: 18, weight: .bold, color: Render.Palette.secondary, alignment: .left)
-				Render.drawText(value, in: CGRect(x: 6, y: 32, width: 132, height: 52), size: 44, weight: .bold, monospacedDigits: true)
+				Render.drawValue(value, unit: unit, in: CGRect(x: 6, y: 32, width: 132, height: 52), size: 44)
 				drawGraph(CGRect(x: 6, y: 92, width: 132, height: 46))
 			} else {
 				Render.drawText(label, in: CGRect(x: 8, y: 22, width: 128, height: 30), size: 22, weight: .bold, color: Render.Palette.secondary)
-				Render.drawText(value, in: CGRect(x: 6, y: 58, width: 132, height: 60), size: 48, weight: .bold, color: color, monospacedDigits: true)
+				Render.drawValue(value, unit: unit, in: CGRect(x: 6, y: 58, width: 132, height: 60), size: 48, color: color)
 			}
 		}
 	}
@@ -186,6 +196,11 @@ final class MonitorAction: ActionHandler {
 	/// Graph ceiling for byte rates: the recent peak with headroom, at least 100 KB/s so idle noise stays flat.
 	private static func scale(_ values: [Double]) -> Double {
 		max(100_000, (values.max() ?? 0) * 1.15)
+	}
+
+	static func splitRate(_ bytesPerSecond: Double) -> (String, String) {
+		let parts = formatRate(bytesPerSecond).split(separator: " ", maxSplits: 1).map(String.init)
+		return (parts[0], parts.count > 1 ? parts[1] : "")
 	}
 
 	static func formatRate(_ bytesPerSecond: Double) -> String {

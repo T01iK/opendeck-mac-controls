@@ -18,7 +18,10 @@ echo "✓ Installed to $PLUGINS/$NAME"
 
 if [[ "${1:-}" != "--no-restart" ]] && pgrep -xq opendeck; then
 	echo "→ Restarting OpenDeck"
-	osascript -e 'quit app "OpenDeck"' 2>/dev/null || pkill -x opendeck || true
+	# A normal quit may only hide OpenDeck when it runs in the background, so terminate it.
+	pkill -x opendeck || true
 	for _ in {1..20}; do pgrep -xq opendeck || break; sleep 0.5; done
-	open -a OpenDeck
+	sleep 1
+	# Launch with a clean environment, like the Dock does, so this shell's variables do not leak into OpenDeck and its plugins.
+	env -i HOME="$HOME" USER="$USER" LOGNAME="$USER" PATH=/usr/bin:/bin:/usr/sbin:/sbin /usr/bin/open -a OpenDeck
 fi

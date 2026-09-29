@@ -33,6 +33,7 @@ final class ShortcutAction: ActionHandler {
 			self.running.remove(instance.context)
 			guard Plugin.shared.isAlive(instance) else { return }
 			if status == 0 {
+				Log.info("Shortcut '\(name)' finished")
 				Plugin.shared.showOk(instance)
 			} else {
 				Log.error("Shortcut '\(name)' failed (\(status)): \(error)")
@@ -60,26 +61,8 @@ final class ShortcutAction: ActionHandler {
 	/// Runs /usr/bin/shortcuts off the main thread and reports back on the main queue.
 	private static func run(_ arguments: [String], completion: @escaping (Int32, String, String) -> Void) {
 		DispatchQueue.global(qos: .userInitiated).async {
-			let process = Process()
-			process.executableURL = URL(fileURLWithPath: "/usr/bin/shortcuts")
-			process.arguments = arguments
-			let stdout = Pipe()
-			let stderr = Pipe()
-			process.standardOutput = stdout
-			process.standardError = stderr
-			process.standardInput = FileHandle.nullDevice
-			do {
-				try process.run()
-			} catch {
-				DispatchQueue.main.async { completion(-1, "", error.localizedDescription) }
-				return
-			}
-			let output = stdout.fileHandleForReading.readDataToEndOfFile()
-			let errors = stderr.fileHandleForReading.readDataToEndOfFile()
-			process.waitUntilExit()
-			DispatchQueue.main.async {
-				completion(process.terminationStatus, String(decoding: output, as: UTF8.self), String(decoding: errors, as: UTF8.self))
-			}
+			let result = Subprocess.run("/usr/bin/shortcuts", arguments)
+			DispatchQueue.main.async { completion(result.status, result.output, result.error) }
 		}
 	}
 }
