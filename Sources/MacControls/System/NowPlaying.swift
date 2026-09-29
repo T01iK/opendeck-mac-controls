@@ -49,6 +49,20 @@ final class NowPlaying {
 		launch()
 	}
 
+	/// Until this time, positions reported by MediaRemote are ignored: right after a seek it still reports the old one.
+	private var seekHoldUntil = Date.distantPast
+
+	/// Jumps to `position` seconds in the current item and shows it immediately.
+	func seek(to position: Double) {
+		guard available, let input, !info.isEmpty else { return }
+		let clamped = max(0, info.duration > 0 ? min(position, info.duration - 1) : position)
+		info.elapsed = clamped
+		info.timestamp = Date()
+		seekHoldUntil = Date().addingTimeInterval(1.5)
+		input.write(Data("seek \(clamped)\n".utf8))
+		onChange?()
+	}
+
 	func send(_ command: String) {
 		if available, let input {
 			input.write(Data((command + "\n").utf8))
@@ -150,6 +164,10 @@ final class NowPlaying {
 				next.elapsed = (json["elapsed"] as? NSNumber)?.doubleValue ?? 0
 				next.rate = (json["rate"] as? NSNumber)?.doubleValue ?? (next.playing ? 1 : 0)
 				if let ts = (json["timestamp"] as? NSNumber)?.doubleValue { next.timestamp = Date(timeIntervalSince1970: ts) }
+				if Date() < seekHoldUntil, next.title == info.title {
+					next.elapsed = info.elapsed
+					next.timestamp = info.timestamp
+				}
 				let sameItem = next.title == info.title && next.artist == info.artist
 				if let artwork = json["artwork"] as? String {
 					next.artwork = Data(base64Encoded: artwork).flatMap(NSImage.init(data:))

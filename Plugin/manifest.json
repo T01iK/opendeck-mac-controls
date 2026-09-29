@@ -54,9 +54,9 @@
 			"PropertyInspectorPath": "pi/media.html",
 			"Controllers": ["Keypad", "Encoder"],
 			"Encoder": {
-				"layout": "$B1",
+				"layout": "layouts/media.json",
 				"Icon": "icons/media",
-				"TriggerDescription": { "Rotate": "Previous / next track", "Push": "Play / pause" }
+				"TriggerDescription": { "Rotate": "Skip tracks or scrub", "Push": "Play / pause" }
 			},
 			"States": [{ "Image": "keys/media", "ShowTitle": false }],
 			"SupportedInMultiActions": true

@@ -23,6 +23,7 @@ cp Helpers/NowPlaying/nowplaying.pl "$OUT/"
 echo "→ Copying manifest and property inspectors"
 cp Plugin/manifest.json "$OUT/"
 cp -R Plugin/pi "$OUT/pi"
+cp -R Plugin/layouts "$OUT/layouts"
 
 echo "→ Rendering icons"
 "$OUT/MacControls" --generate-icons "$OUT"

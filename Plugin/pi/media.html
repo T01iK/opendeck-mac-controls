@@ -16,6 +16,19 @@
 				</select>
 			</div>
 		</div>
+		<div class="row" data-controller="Encoder">
+			<label for="dialMode">Turn</label>
+			<div class="value">
+				<select id="dialMode" data-setting="dialMode" data-default="tracks">
+					<option value="tracks">Previous / next track</option>
+					<option value="scrub">Scrub through the track</option>
+				</select>
+			</div>
+		</div>
+		<div class="row" id="step-row">
+			<label for="scrubStep">Seconds / click</label>
+			<div class="value"><input id="scrubStep" type="number" min="1" max="120" data-setting="scrubStep" data-default="5" /></div>
+		</div>
 		<div class="row" id="info-row">
 			<label for="showInfo">Now playing</label>
 			<div class="value">
@@ -23,7 +36,24 @@
 				<label for="showInfo">Show artwork, title and progress</label>
 			</div>
 		</div>
-		<p class="hint" data-controller="Encoder">Turn to skip tracks, press to play / pause.</p>
+		<div class="row" id="scroll-row">
+			<label for="scrollText">Long text</label>
+			<div class="value">
+				<input id="scrollText" type="checkbox" data-setting="scrollText" data-default="false" />
+				<label for="scrollText">Scroll to show all of it</label>
+			</div>
+		</div>
+		<div class="row" id="speed-row">
+			<label for="scrollSpeed">Scroll speed</label>
+			<div class="value">
+				<select id="scrollSpeed" data-setting="scrollSpeed" data-default="normal">
+					<option value="slow">Slow</option>
+					<option value="normal">Normal</option>
+					<option value="fast">Fast</option>
+				</select>
+			</div>
+		</div>
+		<p class="hint" data-controller="Encoder">Press to play / pause. Scrubbing works with apps that report their position (Music, Spotify, Podcasts, browsers).</p>
 		<p class="hint">
 			Now-playing info uses a private macOS API through Apple's <code>/usr/bin/perl</code> (the only way since macOS 15.4). If a
 			future macOS blocks it, the key falls back to a plain icon and media keys.
@@ -32,7 +62,13 @@
 			const baseRefresh = refreshVisibility;
 			refreshVisibility = () => {
 				baseRefresh();
-				document.getElementById("info-row").hidden = actionInfo.payload.controller !== "Encoder" && current("command") !== "playpause";
+				const encoder = actionInfo.payload.controller === "Encoder";
+				document.getElementById("info-row").hidden = !encoder && current("command") !== "playpause";
+				document.getElementById("step-row").hidden = !encoder || current("dialMode") !== "scrub";
+				// Scrolling only matters where the track info is shown.
+				const showsInfo = (encoder || current("command") === "playpause") && current("showInfo") !== "false";
+				document.getElementById("scroll-row").hidden = !showsInfo;
+				document.getElementById("speed-row").hidden = !showsInfo || current("scrollText") === "false";
 			};
 		</script>
 	</body>

@@ -202,6 +202,12 @@ final class Plugin {
 		send(["event": "setFeedback", "context": instance.context, "payload": payload])
 	}
 
+	/// Switches an encoder to another layout (a built-in "$…" id or a JSON file in the plugin folder).
+	func setFeedbackLayout(_ instance: Instance, _ layout: String) {
+		instance.lastFeedback = nil
+		send(["event": "setFeedbackLayout", "context": instance.context, "payload": ["layout": layout]])
+	}
+
 	func setSettings(_ instance: Instance) {
 		send(["event": "setSettings", "context": instance.context, "payload": instance.settings])
 	}

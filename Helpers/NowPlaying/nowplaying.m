@@ -6,7 +6,7 @@
 // Protocol:
 //   stdout: one JSON object per line, {"type":"info", ...} whenever the now-playing state changes. "artwork" (base64
 //           JPEG) is only included when it changed; "hasArtwork" says whether the item currently has any.
-//   stdin:  one command per line: togglePlayPause | play | pause | stop | next | previous
+//   stdin:  one command per line: togglePlayPause | play | pause | stop | next | previous | seek <seconds> | refresh
 // The helper exits when stdin is closed, i.e. when the plugin goes away.
 
 #import <AppKit/AppKit.h>
@@ -19,11 +19,13 @@ typedef void (*MRGetInfoFn)(dispatch_queue_t, void (^)(NSDictionary *));
 typedef void (*MRGetIsPlayingFn)(dispatch_queue_t, void (^)(Boolean));
 typedef void (*MRGetPIDFn)(dispatch_queue_t, void (^)(int));
 typedef Boolean (*MRSendCommandFn)(int, NSDictionary *);
+typedef void (*MRSetElapsedTimeFn)(double);
 
 static MRGetInfoFn getInfo;
 static MRGetIsPlayingFn getIsPlaying;
 static MRGetPIDFn getPID;
 static MRSendCommandFn sendCommand;
+static MRSetElapsedTimeFn setElapsedTime;
 
 static NSUInteger lastArtworkHash = 0;
 static BOOL refreshScheduled = NO;
@@ -127,6 +129,16 @@ static void handleCommand(NSString *line) {
 	};
 	NSString *name = [line stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
 	if (name.length == 0) return;
+	// "seek <seconds>": jump to an absolute position in the current item.
+	if ([name hasPrefix:@"seek "]) {
+		double position = [[name substringFromIndex:5] doubleValue];
+		if (setElapsedTime && position >= 0) {
+			setElapsedTime(position);
+			scheduleRefresh();
+		}
+		emit(@{@"type": @"command", @"command": @"seek", @"ok": @(setElapsedTime != NULL)});
+		return;
+	}
 	if ([name isEqualToString:@"refresh"]) {
 		lastArtworkHash = 0;
 		refresh();
@@ -172,6 +184,7 @@ void macdeck_nowplaying_run(void *perl, void *cv) {
 		getIsPlaying = (MRGetIsPlayingFn)dlsym(mr, "MRMediaRemoteGetNowPlayingApplicationIsPlaying");
 		getPID = (MRGetPIDFn)dlsym(mr, "MRMediaRemoteGetNowPlayingApplicationPID");
 		sendCommand = (MRSendCommandFn)dlsym(mr, "MRMediaRemoteSendCommand");
+		setElapsedTime = (MRSetElapsedTimeFn)dlsym(mr, "MRMediaRemoteSetElapsedTime");
 		if (!registerForNotifications || !getInfo || !getIsPlaying || !getPID || !sendCommand) {
 			emit(@{@"type": @"error", @"message": @"MediaRemote symbols missing"});
 			exit(1);

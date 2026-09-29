@@ -22,26 +22,34 @@ enum Render {
 	// MARK: Canvas
 
 	static func png(size: CGFloat = size, _ draw: (CGRect) -> Void) -> Data {
-		let pixels = Int(size)
+		png(width: size, height: size, draw)
+	}
+
+	static func png(width: CGFloat, height: CGFloat, _ draw: (CGRect) -> Void) -> Data {
 		let rep = NSBitmapImageRep(
-			bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels, bitsPerSample: 8, samplesPerPixel: 4,
+			bitmapDataPlanes: nil, pixelsWide: Int(width), pixelsHigh: Int(height), bitsPerSample: 8, samplesPerPixel: 4,
 			hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0
 		)!
-		rep.size = NSSize(width: size, height: size)
+		rep.size = NSSize(width: width, height: height)
 		let context = NSGraphicsContext(bitmapImageRep: rep)!
 		// Flip so that y grows downwards, which makes layouts easier to read.
-		context.cgContext.translateBy(x: 0, y: size)
+		context.cgContext.translateBy(x: 0, y: height)
 		context.cgContext.scaleBy(x: 1, y: -1)
 		let flipped = NSGraphicsContext(cgContext: context.cgContext, flipped: true)
 		NSGraphicsContext.saveGraphicsState()
 		NSGraphicsContext.current = flipped
-		draw(CGRect(x: 0, y: 0, width: size, height: size))
+		draw(CGRect(x: 0, y: 0, width: width, height: height))
 		NSGraphicsContext.restoreGraphicsState()
 		return rep.representation(using: .png, properties: [:])!
 	}
 
 	static func dataURI(_ draw: (CGRect) -> Void) -> String {
 		"data:image/png;base64," + png(draw).base64EncodedString()
+	}
+
+	/// Dial strip segment (200×100, the Stream Deck + size OpenDeck renders encoder layouts at).
+	static func stripDataURI(_ draw: (CGRect) -> Void) -> String {
+		"data:image/png;base64," + png(width: 200, height: 100, draw).base64EncodedString()
 	}
 
 	// MARK: Primitives
@@ -109,6 +117,54 @@ enum Render {
 		let height = min(fullHeight, lineHeight * CGFloat(maxLines), max(rect.height, lineHeight))
 		let target = CGRect(x: rect.minX, y: rect.midY - height / 2, width: rect.width, height: height)
 		string.draw(with: target, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine])
+	}
+
+	/// Draws one line of text; if it is wider than `rect` it scrolls like a marquee: it rests at the start, scrolls
+	/// through, and loops with a gap. `elapsed` is the time since the text first appeared; `speed` is in points per
+	/// second, nil disables scrolling (long text is truncated with "…"). Returns whether it scrolls (the caller then has
+	/// to keep re-rendering to animate it).
+	@discardableResult
+	static func drawMarquee(
+		_ text: String, in rect: CGRect, size: CGFloat, weight: NSFont.Weight = .semibold, color: NSColor = Palette.text,
+		alignment: NSTextAlignment = .left, elapsed: TimeInterval, speed: CGFloat? = 40
+	) -> Bool {
+		let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: size, weight: weight), .foregroundColor: color]
+		let string = NSAttributedString(string: text, attributes: attributes)
+		let textSize = string.size()
+		let y = rect.midY - textSize.height / 2
+		guard textSize.width > rect.width else {
+			let x: CGFloat
+			switch alignment {
+			case .center: x = rect.midX - textSize.width / 2
+			case .right: x = rect.maxX - textSize.width
+			default: x = rect.minX
+			}
+			string.draw(at: CGPoint(x: x, y: y))
+			return false
+		}
+		guard let speed, speed > 0 else {
+			let paragraph = NSMutableParagraphStyle()
+			paragraph.lineBreakMode = .byTruncatingTail
+			paragraph.alignment = alignment
+			var truncated = attributes
+			truncated[.paragraphStyle] = paragraph
+			NSAttributedString(string: text, attributes: truncated)
+				.draw(with: CGRect(x: rect.minX, y: y, width: rect.width, height: textSize.height), options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine])
+			return false
+		}
+		let rest: TimeInterval = 1.5
+		let gap: CGFloat = size * 2.5
+		let loop = textSize.width + gap
+		let cycle = rest + Double(loop / speed)
+		let phase = elapsed.truncatingRemainder(dividingBy: cycle)
+		let offset = phase < rest ? 0 : CGFloat(phase - rest) * speed
+
+		NSGraphicsContext.saveGraphicsState()
+		NSBezierPath(rect: rect).addClip()
+		string.draw(at: CGPoint(x: rect.minX - offset, y: y))
+		string.draw(at: CGPoint(x: rect.minX - offset + loop, y: y))
+		NSGraphicsContext.restoreGraphicsState()
+		return true
 	}
 
 	/// Draws a number with a smaller unit after it ("346" + "KB/s"), shrinking both until they fit the width.

@@ -6,7 +6,7 @@ Native macOS actions for [OpenDeck](https://github.com/nekename/OpenDeck), writt
 |---|---|---|
 | **Volume** | up / down (hold to repeat), mute, set to preset; shows level | turn = adjust, press = mute |
 | **Display Brightness** | up / down, set to preset; shows level | turn = adjust, press = preset |
-| **Media** | play/pause with artwork, title and progress; next; previous | turn = skip track, press = play/pause |
+| **Media** | play/pause with artwork, title and progress; next; previous; optional scrolling of long titles | turn = skip track or scrub, press = play/pause |
 | **Mission Control**, **Apps (Launchpad)**, **Spotlight**, **Siri** | toggle / activate; symbol or system app icon | – |
 | **Emoji & Symbols**, **Dictation** | open for the focused text field | – |
 | **Run Shortcut** | runs a Shortcuts.app shortcut (optional text input) with its own icon, ✓ / ⚠ feedback | – |
@@ -52,6 +52,8 @@ OpenDeck plugin can use it. If you do not use these two actions you can simply d
   helper (`Helpers/NowPlaying`) is loaded into `/usr/bin/perl`, which is allowed. Transport commands go through the same
   helper; if a future macOS breaks this, the plugin falls back to synthetic media keys and plain icons. Right after
   play/pause MediaRemote briefly reports the item without artwork; the previous artwork is kept for the same item.
+  Scrubbing uses `MRMediaRemoteSetElapsedTime` (only apps that support seeking). The Media dial uses a custom layout
+  (`Plugin/layouts/media.json`, one full-size pixmap drawn by the plugin) so long text can scroll smoothly.
 - **Mission Control / Apps** — Dock notifications (`com.apple.expose.awake`, `com.apple.launchpad.toggle`).
   **Spotlight** — the `com.apple.spotlight.toggle` distributed notification (works even with ⌘Space disabled).
   **Siri** — opens `/System/Applications/Siri.app`.
