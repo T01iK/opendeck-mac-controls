@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="pi.css" />
+		<script src="pi.js"></script>
+	</head>
+	<body>
+		<div class="row">
+			<label for="mode">Key action</label>
+			<div class="value">
+				<select id="mode" data-setting="mode" data-default="select">
+					<option value="select">Switch to a device</option>
+					<option value="cycle">Cycle through devices</option>
+				</select>
+			</div>
+		</div>
+		<div class="row" data-show="mode=select">
+			<label for="device">Device</label>
+			<div class="value">
+				<select id="device">
+					<option value="">Loading…</option>
+				</select>
+				<button id="reload" title="Reload list">↻</button>
+			</div>
+		</div>
+		<div class="row">
+			<label for="showLabel">Label</label>
+			<div class="value">
+				<input id="showLabel" type="checkbox" data-setting="showLabel" data-default="true" />
+				<label for="showLabel">Show text under icon</label>
+			</div>
+		</div>
+		<p class="hint" data-show="mode=select">The key lights up while this device is the current output.</p>
+		<p class="hint" data-show="mode=cycle">Each press moves to the next output device; the key shows the current one.</p>
+		<script>
+			let devices = [];
+
+			function onConnected() {
+				sendToPlugin({ request: "listDevices" });
+			}
+
+			function onPluginMessage(payload) {
+				if (!payload.devices) return;
+				devices = payload.devices;
+				const select = document.getElementById("device");
+				select.replaceChildren(new Option("Choose a device…", ""));
+				for (const device of devices) select.add(new Option(device.name, device.uid));
+				if (settings.device && !devices.some((d) => d.uid === settings.device)) {
+					select.add(new Option((settings.deviceName ?? "Device") + " (disconnected)", settings.device));
+				}
+				select.value = settings.device ?? "";
+			}
+
+			document.getElementById("device").onchange = (event) => {
+				const device = devices.find((d) => d.uid === event.target.value);
+				if (!device) return;
+				settings.device = device.uid;
+				settings.deviceName = device.name;
+				save();
+			};
+
+			document.getElementById("reload").onclick = () => sendToPlugin({ request: "listDevices" });
+		</script>
+	</body>
+</html>

@@ -13,6 +13,7 @@ func generateIcons(into directory: URL) throws {
 		"missioncontrol": "rectangle.3.group.fill", "apps": "square.grid.3x3.fill", "spotlight": "magnifyingglass",
 		"emoji": "face.smiling", "dictation": "mic.fill", "siri": "waveform",
 		"shortcut": "square.2.layers.3d.fill", "openapp": "arrow.up.forward.app.fill", "monitor": "gauge.with.dots.needle.67percent",
+		"controlcenter": "switch.2", "keyboardbrightness": "light.max", "audiooutput": "hifispeaker.fill", "inputsource": "globe",
 	]
 	for (name, symbol) in listIcons {
 		let base = name == "plugin" ? 28.0 : 20.0
@@ -20,22 +21,7 @@ func generateIcons(into directory: URL) throws {
 		try Render.listIcon(symbol: symbol, size: base * 2).write(to: icons.appendingPathComponent("\(name)@2x.png"))
 	}
 
-	let palette = Render.Palette.self
-	let keyImages: [String: (symbol: String, label: String?, color: NSColor)] = [
-		"volume": ("speaker.wave.2.fill", "Volume", palette.text),
-		"brightness": ("sun.max.fill", "Brightness", palette.yellow),
-		"media": ("playpause.fill", nil, palette.text),
-		"missioncontrol": ("rectangle.3.group.fill", "Mission", palette.blue),
-		"apps": ("square.grid.3x3.fill", "Apps", palette.teal),
-		"spotlight": ("magnifyingglass", "Spotlight", palette.text),
-		"emoji": ("face.smiling.inverse", "Emoji", palette.yellow),
-		"dictation": ("mic.fill", "Dictation", palette.red),
-		"siri": ("waveform", "Siri", palette.purple),
-		"shortcut": ("square.2.layers.3d.fill", "Shortcut", palette.purple),
-		"openapp": ("arrow.up.forward.app.fill", "Open App", palette.blue),
-		"monitor": ("gauge.with.dots.needle.67percent", "Monitor", palette.green),
-	]
-	for (name, spec) in keyImages {
+	for (name, spec) in Render.defaultKeys {
 		let uri = Render.iconKey(symbol: spec.symbol, label: spec.label, color: spec.color)
 		let data = Data(base64Encoded: String(uri.dropFirst("data:image/png;base64,".count)))!
 		try data.write(to: keys.appendingPathComponent("\(name)@2x.png"))
@@ -48,6 +34,11 @@ func generateIcons(into directory: URL) throws {
 }
 
 let arguments = CommandLine.arguments
+
+// Helper mode used by the Bluetooth switch (see ControlCenter.swift).
+if let index = arguments.firstIndex(of: "--bluetooth"), index + 1 < arguments.count {
+	exit(ControlCenter.bluetoothHelperMain(arguments[index + 1]))
+}
 
 if let index = arguments.firstIndex(of: "--generate-icons"), index + 1 < arguments.count {
 	do {
@@ -77,6 +68,10 @@ Plugin.shared = Plugin(port: port, uuid: uuid, registerEvent: registerEvent, han
 	LauncherAction(),
 	ShortcutAction(),
 	AppAction(),
+	ControlCenterAction(),
+	KeyboardBrightnessAction(),
+	AudioOutputAction(),
+	InputSourceAction(),
 	MonitorAction(),
 ])
 Plugin.shared.start()

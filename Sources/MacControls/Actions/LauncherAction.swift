@@ -2,6 +2,8 @@ import AppKit
 import Carbon.HIToolbox
 
 /// One-shot system functions: Mission Control, Apps (Launchpad), Spotlight, Emoji & Symbols, Dictation, Siri.
+///
+/// Settings: `systemIcon` (bool, default false — Mission Control, Apps, Spotlight, Siri), `showLabel` (bool, default true).
 final class LauncherAction: ActionHandler {
 	let actionIDs = ["missioncontrol", "apps", "spotlight", "emoji", "dictation", "siri"]
 
@@ -19,19 +21,21 @@ final class LauncherAction: ActionHandler {
 		"siri": "/System/Applications/Siri.app",
 	]
 
+	/// The manifest's default image has a caption; it is only replaced when the system icon or no caption is wanted.
 	func willAppear(_ instance: Instance) {
-		guard instance.bool("systemIcon", false), let path = systemIconPaths[instance.action], FileManager.default.fileExists(atPath: path) else {
-			return
+		if instance.bool("systemIcon", false), let path = systemIconPaths[instance.action], FileManager.default.fileExists(atPath: path) {
+			Plugin.shared.setImage(instance, Render.imageKey(NSWorkspace.shared.icon(forFile: path)))
+		} else if !instance.bool("showLabel", true), let spec = Render.defaultKeys[instance.action] {
+			Plugin.shared.setImage(instance, Render.iconKey(symbol: spec.symbol, color: spec.color))
 		}
-		Plugin.shared.setImage(instance, Render.imageKey(NSWorkspace.shared.icon(forFile: path)))
 	}
 
 	func settingsChanged(_ instance: Instance) {
-		if instance.bool("systemIcon", false) {
+		if instance.bool("systemIcon", false) || !instance.bool("showLabel", true) {
 			willAppear(instance)
 		} else {
-			// Switching the option off: an empty image restores the default from the manifest. Not done on appear so a
-			// custom image set in OpenDeck is left alone.
+			// Back to the defaults: an empty image restores the manifest image. Not done on appear so a custom image set
+			// in OpenDeck is left alone.
 			Plugin.shared.setImage(instance, "")
 		}
 	}

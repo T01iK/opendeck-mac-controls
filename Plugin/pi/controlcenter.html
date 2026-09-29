@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="pi.css" />
+		<script src="pi.js"></script>
+	</head>
+	<body>
+		<div class="row">
+			<label for="feature">Feature</label>
+			<div class="value">
+				<select id="feature" data-setting="feature" data-default="wifi">
+					<optgroup label="Switches">
+						<option value="wifi">Wi-Fi</option>
+						<option value="bluetooth">Bluetooth</option>
+						<option value="stageManager">Stage Manager</option>
+						<option value="darkMode">Dark Mode</option>
+						<option value="nightShift">Night Shift</option>
+						<option value="trueTone">True Tone</option>
+						<option value="micMute">Mute microphone</option>
+						<option value="keepAwake">Keep awake</option>
+						<option value="dockAutohide">Hide Dock automatically</option>
+					</optgroup>
+					<optgroup label="Commands">
+						<option value="lockScreen">Lock screen</option>
+						<option value="displaySleep">Turn displays off</option>
+						<option value="screensaver">Start screensaver</option>
+						<option value="sleep">Sleep</option>
+						<option value="showDesktop">Show desktop</option>
+					</optgroup>
+				</select>
+			</div>
+		</div>
+		<div class="row">
+			<label for="showLabel">Label</label>
+			<div class="value">
+				<input id="showLabel" type="checkbox" data-setting="showLabel" data-default="true" />
+				<label for="showLabel">Show text under icon</label>
+			</div>
+		</div>
+		<p class="hint" data-show="feature=wifi">Fails if macOS is set to require an administrator to turn Wi-Fi on or off.</p>
+		<p class="hint" data-show="feature=bluetooth">
+			macOS asks once to allow <b>macOS Controls</b> to use Bluetooth. Turning it off disconnects Bluetooth keyboards and mice.
+		</p>
+		<p class="hint" data-show="feature=stageManager">Switching restarts the window manager, which causes a brief flicker.</p>
+		<p class="hint" data-show="feature=nightShift,trueTone">Shows N/A when no display supports it (True Tone needs an Apple display).</p>
+		<p class="hint" data-show="feature=micMute">Mutes the current input device (or turns its level to 0 if it has no mute control).</p>
+		<p class="hint" data-show="feature=keepAwake">Keeps the displays and the Mac from sleeping while on, like <code>caffeinate</code>.</p>
+		<p class="hint" data-show="feature=displaySleep">The Mac keeps running; move the mouse or press a key to wake the displays.</p>
+	</body>
+</html>

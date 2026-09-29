@@ -13,8 +13,12 @@ enum Subprocess {
 		let error: String
 	}
 
+	@_silgen_name("responsibility_spawnattrs_setdisclaim")
+	private static func setDisclaim(_ attributes: UnsafeMutablePointer<posix_spawnattr_t?>, _ disclaim: Int32) -> Int32
+
 	/// Blocks until the command exits; call it off the main thread.
-	static func run(_ executable: String, _ arguments: [String]) -> Result {
+	/// `disclaim` makes the child its own "responsible process" for privacy (TCC) checks instead of OpenDeck.
+	static func run(_ executable: String, _ arguments: [String], disclaim: Bool = false) -> Result {
 		let directory = FileManager.default.temporaryDirectory
 		let outPath = directory.appendingPathComponent("macdeck-\(UUID().uuidString).out").path
 		let errPath = directory.appendingPathComponent("macdeck-\(UUID().uuidString).err").path
@@ -32,8 +36,13 @@ enum Subprocess {
 		let argv = ([executable] + arguments).map { strdup($0) } + [nil]
 		defer { argv.forEach { free($0) } }
 
+		var attributes: posix_spawnattr_t?
+		posix_spawnattr_init(&attributes)
+		defer { posix_spawnattr_destroy(&attributes) }
+		if disclaim { _ = setDisclaim(&attributes, 1) }
+
 		var pid = pid_t(0)
-		let spawned = posix_spawn(&pid, executable, &actions, nil, argv, environ)
+		let spawned = posix_spawn(&pid, executable, &actions, &attributes, argv, environ)
 		guard spawned == 0 else {
 			return Result(status: -1, output: "", error: String(cString: strerror(spawned)))
 		}

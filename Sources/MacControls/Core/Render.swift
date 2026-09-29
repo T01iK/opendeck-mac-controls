@@ -172,6 +172,29 @@ enum Render {
 		line.stroke()
 	}
 
+	// MARK: Default key images
+
+	/// Symbol, caption and colour of each action's default key image (rendered into the bundle by --generate-icons,
+	/// and at runtime when a launcher hides its caption).
+	static let defaultKeys: [String: (symbol: String, label: String?, color: NSColor)] = [
+		"volume": ("speaker.wave.2.fill", "Volume", Palette.text),
+		"brightness": ("sun.max.fill", "Brightness", Palette.yellow),
+		"media": ("playpause.fill", nil, Palette.text),
+		"missioncontrol": ("rectangle.3.group.fill", "Mission", Palette.blue),
+		"apps": ("square.grid.3x3.fill", "Apps", Palette.teal),
+		"spotlight": ("magnifyingglass", "Spotlight", Palette.text),
+		"emoji": ("face.smiling.inverse", "Emoji", Palette.yellow),
+		"dictation": ("mic.fill", "Dictation", Palette.red),
+		"siri": ("waveform", "Siri", Palette.purple),
+		"shortcut": ("square.2.layers.3d.fill", "Shortcut", Palette.purple),
+		"openapp": ("arrow.up.forward.app.fill", "Open App", Palette.blue),
+		"controlcenter": ("switch.2", "Control", Palette.blue),
+		"keyboardbrightness": ("light.max", "Keyboard", Palette.teal),
+		"audiooutput": ("hifispeaker.fill", "Output", Palette.text),
+		"inputsource": ("globe", "Layout", Palette.text),
+		"monitor": ("gauge.with.dots.needle.67percent", "Monitor", Palette.green),
+	]
+
 	// MARK: Layouts
 
 	/// Symbol on top, big value, progress bar at the bottom (volume, brightness).
@@ -228,6 +251,48 @@ enum Render {
 				NSBezierPath(ovalIn: CGRect(x: 67, y: hasLabel ? 133 : 130, width: 10, height: 10)).fill()
 			}
 		}
+	}
+
+	/// Control Center style tile: a circle filled with `color` when on, grey when off, dimmed when unavailable (nil).
+	/// Without a label the circle grows to fill the key.
+	static func toggleKey(symbol: String, label: String?, on: Bool?, color: NSColor = Palette.blue) -> String {
+		dataURI { rect in
+			fillBackground(rect)
+			let circle = label == nil ? CGRect(x: 16, y: 16, width: 112, height: 112) : CGRect(x: 30, y: 10, width: 84, height: 84)
+			let fill: NSColor = on == true ? color : NSColor(calibratedWhite: 1, alpha: on == nil ? 0.08 : 0.2)
+			fill.setFill()
+			NSBezierPath(ovalIn: circle).fill()
+			let glyphColor: NSColor = on == nil ? Palette.secondary.withAlphaComponent(0.4) : .white
+			let glyphRect = circle.insetBy(dx: circle.width * 0.24, dy: circle.width * 0.24)
+			if symbol == "bluetooth" {
+				drawBluetoothRune(in: glyphRect, color: glyphColor)
+			} else {
+				drawSymbol(symbol, in: glyphRect, color: glyphColor)
+			}
+			if let label {
+				drawText(on == nil ? "\(label) N/A" : label, in: CGRect(x: 4, y: 104, width: 136, height: 30), size: 21,
+				         color: on == nil ? Palette.secondary : Palette.text, minSize: 16)
+			}
+		}
+	}
+
+	/// The Bluetooth logo (SF Symbols has none).
+	static func drawBluetoothRune(in rect: CGRect, color: NSColor) {
+		let w = rect.height * 0.5
+		let x = rect.midX
+		func point(_ dx: CGFloat, _ dy: CGFloat) -> CGPoint { CGPoint(x: x + dx * w / 2, y: rect.midY + dy * rect.height / 2) }
+		let path = NSBezierPath()
+		path.move(to: point(-1, -0.5))
+		path.line(to: point(1, 0.5))
+		path.line(to: point(0, 1))
+		path.line(to: point(0, -1))
+		path.line(to: point(1, -0.5))
+		path.line(to: point(-1, 0.5))
+		path.lineWidth = rect.height * 0.1
+		path.lineJoinStyle = .round
+		path.lineCapStyle = .round
+		color.setStroke()
+		path.stroke()
 	}
 
 	/// Icon used in OpenDeck's action list (monochrome, transparent background).

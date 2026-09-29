@@ -108,12 +108,7 @@ final class VolumeAction: LevelAction {
 
 	override init() {
 		super.init()
-		audio.onChange = { [weak self] in self?.refreshAll() }
-	}
-
-	override func willAppear(_ instance: Instance) {
-		audio.startObserving()
-		super.willAppear(instance)
+		audio.addObserver { [weak self] in self?.refreshAll() }
 	}
 
 	override var level: Float? { audio.volume }
@@ -174,6 +169,41 @@ final class BrightnessAction: LevelAction {
 	override func willAppear(_ instance: Instance) {
 		super.willAppear(instance)
 		// Brightness can also change via the keyboard, auto-brightness or lid state; poll lightly while visible.
+		if poll == nil {
+			poll = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in self?.refreshAll() }
+		}
+	}
+
+	override func willDisappear(_ instance: Instance) {
+		super.willDisappear(instance)
+		DispatchQueue.main.async { [weak self] in
+			guard let self, Plugin.shared.instances(of: self).isEmpty else { return }
+			self.poll?.invalidate()
+			self.poll = nil
+		}
+	}
+}
+
+final class KeyboardBrightnessAction: LevelAction {
+	override var actionIDs: [String] { ["keyboardbrightness"] }
+	override var title: String { "Keyboard" }
+	override var color: NSColor { Render.Palette.teal }
+
+	private let backlight = KeyboardBacklight.shared
+	private var poll: Timer?
+
+	override var level: Float? { backlight.brightness }
+
+	override func setLevel(_ value: Float) -> Bool { backlight.setBrightness(value) }
+
+	override func symbol(for level: Float?) -> String {
+		guard let level else { return "keyboard" }
+		return level < 0.5 ? "light.min" : "light.max"
+	}
+
+	override func willAppear(_ instance: Instance) {
+		super.willAppear(instance)
+		// Auto-brightness and the F-keys change it too.
 		if poll == nil {
 			poll = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in self?.refreshAll() }
 		}

@@ -36,7 +36,10 @@
 		<p class="hint" id="repeat-hint">Increase / Decrease repeat while the key is held.</p>
 		<p class="hint" data-controller="Encoder">
 			<span data-for-action="volume">Turn to adjust, press to mute.</span>
-			<span data-for-action="brightness">Turn to adjust, press to jump to the preset.</span>
+			<span data-for-action="brightness,keyboardbrightness">Turn to adjust, press to jump to the preset.</span>
+		</p>
+		<p class="hint" data-for-action="keyboardbrightness">
+			Backlight of the built-in keyboard. Shows N/A on Macs without one; it stays dark while the lid is closed.
 		</p>
 		<p class="hint" data-for-action="brightness">
 			Controls the built-in display and Apple displays (Studio Display, Pro Display XDR). Shows N/A when none is active, e.g.
@@ -47,7 +50,7 @@
 			refreshVisibility = () => {
 				baseRefresh();
 				const encoder = actionInfo.payload.controller === "Encoder";
-				const brightness = document.body.dataset.action === "brightness";
+				const brightness = document.body.dataset.action !== "volume";
 				// Mute only exists for volume.
 				if (brightness) document.getElementById("mute-option")?.remove();
 				// The preset is used by "Set to preset" keys and by the brightness dial press.

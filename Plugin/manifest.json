@@ -142,6 +142,56 @@
 			"SupportedInMultiActions": true
 		},
 		{
+			"UUID": "com.t01ik.macoscontrols.controlcenter",
+			"Name": "Control Center",
+			"Tooltip": "Wi-Fi, Bluetooth, Stage Manager, Dark Mode, Night Shift, True Tone, mic mute, keep awake, Dock hiding, lock, sleep…",
+			"Icon": "icons/controlcenter",
+			"PropertyInspectorPath": "pi/controlcenter.html",
+			"Controllers": ["Keypad", "Encoder"],
+			"Encoder": {
+				"layout": "$B1",
+				"Icon": "icons/controlcenter",
+				"TriggerDescription": { "Push": "Toggle" }
+			},
+			"States": [{ "Image": "keys/controlcenter", "ShowTitle": false }],
+			"SupportedInMultiActions": true
+		},
+		{
+			"UUID": "com.t01ik.macoscontrols.keyboardbrightness",
+			"Name": "Keyboard Brightness",
+			"Tooltip": "Backlight of the built-in keyboard. On a dial: turn to adjust, press for preset.",
+			"Icon": "icons/keyboardbrightness",
+			"PropertyInspectorPath": "pi/level.html",
+			"Controllers": ["Keypad", "Encoder"],
+			"Encoder": {
+				"layout": "$B1",
+				"Icon": "icons/keyboardbrightness",
+				"TriggerDescription": { "Rotate": "Adjust backlight", "Push": "Set preset" }
+			},
+			"States": [{ "Image": "keys/keyboardbrightness", "ShowTitle": false }],
+			"SupportedInMultiActions": true
+		},
+		{
+			"UUID": "com.t01ik.macoscontrols.audiooutput",
+			"Name": "Audio Output",
+			"Tooltip": "Switch the sound output device",
+			"Icon": "icons/audiooutput",
+			"PropertyInspectorPath": "pi/audiooutput.html",
+			"Controllers": ["Keypad"],
+			"States": [{ "Image": "keys/audiooutput", "ShowTitle": false }],
+			"SupportedInMultiActions": true
+		},
+		{
+			"UUID": "com.t01ik.macoscontrols.inputsource",
+			"Name": "Input Source",
+			"Tooltip": "Switch keyboard layout",
+			"Icon": "icons/inputsource",
+			"PropertyInspectorPath": "pi/inputsource.html",
+			"Controllers": ["Keypad"],
+			"States": [{ "Image": "keys/inputsource", "ShowTitle": false }],
+			"SupportedInMultiActions": true
+		},
+		{
 			"UUID": "com.t01ik.macoscontrols.monitor",
 			"Name": "System Monitor",
 			"Tooltip": "CPU, memory, GPU, temperatures, network and disk activity",

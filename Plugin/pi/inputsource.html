@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="pi.css" />
+		<script src="pi.js"></script>
+	</head>
+	<body>
+		<div class="row">
+			<label for="mode">Key action</label>
+			<div class="value">
+				<select id="mode" data-setting="mode" data-default="next">
+					<option value="next">Next layout</option>
+					<option value="select">Switch to a layout</option>
+				</select>
+			</div>
+		</div>
+		<div class="row" data-show="mode=select">
+			<label for="source">Layout</label>
+			<div class="value">
+				<select id="source" data-setting="source" data-default="">
+					<option value="">Loading…</option>
+				</select>
+			</div>
+		</div>
+		<div class="row">
+			<label for="showLabel">Label</label>
+			<div class="value">
+				<input id="showLabel" type="checkbox" data-setting="showLabel" data-default="true" />
+				<label for="showLabel">Show text under icon</label>
+			</div>
+		</div>
+		<p class="hint" data-show="mode=next">Each press switches to the next layout; the key shows the current one.</p>
+		<p class="hint" data-show="mode=select">The key lights up while this layout is active.</p>
+		<script>
+			function onConnected() {
+				sendToPlugin({ request: "listSources" });
+			}
+
+			function onPluginMessage(payload) {
+				if (!payload.sources) return;
+				const select = document.getElementById("source");
+				const selected = settings.source ?? "";
+				select.replaceChildren(new Option("Choose a layout…", ""));
+				for (const source of payload.sources) select.add(new Option(source.name, source.id));
+				select.value = selected;
+			}
+		</script>
+	</body>
+</html>
